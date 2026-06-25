@@ -8,6 +8,18 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 ## [Unreleased]
 
 ### Added
+- **Phase 0 parser/emitter spike** (`src/`): trivia-preserving tokenizer
+  (`src/tokenizer.ts`), hand-written recursive-descent parser (`src/parser.ts`), canonical
+  emitter (`src/emitter.ts`), `.sqlproj` project loader (`src/project.ts`), FK-only ERD edge
+  derivation (`src/erd.ts`), and a CLI test harness (`src/cli.ts`). Run with `npm run spike`
+  (fixtures) and `npm run spike:real` (discovery smoke test). TypeScript runs natively on
+  Node (type-stripping); `npm run typecheck` gates types.
+- **4 new ADRs** settling the Phase 0 open decisions: `ADR-0009` (hand-written
+  recursive-descent parser), `ADR-0010` (D1 — lazy "format on touch" canonicalization),
+  `ADR-0011` (D2 — Syspro mirror tables are read-only), `ADR-0012` (allowlist scope: temporal
+  columns + `PERIOD`, non-fatal post-`GO` handling). ADR index updated.
+- Comment-slots fixture `test/fixtures/comments/dbo.CommentSlots.sql` (all four comment slots
+  + the rule-5 footer fallback), referenced from `SampleErd.sqlproj` (`P0-1c`).
 - Initial project design documentation (`docs/01`–`07`): scope, architecture, SQL
   conventions, comment model, data model, edit/apply UX, and roadmap.
 - 7 Architecture Decision Records (`docs/decisions/ADR-0001`–`0007`).
@@ -37,8 +49,13 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
   and D2 (Syspro mirror scope).
 
 ### Notes
-- Repository is in the **design phase**; no implementation code yet. Next step is the
-  Phase 0 parser/emitter idempotency spike.
+- **Phase 0 exit criteria met on the fixture corpus:** stable fixed point
+  (`emit(parse(emit(x))) === emit(parse(x))`) on every fixture; all four comment slots +
+  rule-5 fallback preserved; commented-out schema ignored (C9); edges only from declared FKs
+  (C10); unsupported constructs raise loud diagnostics without crashing.
+- The `P0-13` smoke test ran discovery over the real 760-item project (read-only): 96 tables,
+  125 FK edges, no crashes. Coverage gaps (proc/view files, post-`GO` objects, extra column
+  modifiers) captured as `P0-14`; exact canonical formatting rules captured as `P0-15`.
 - Reconnaissance of the example project surfaced real-world syntax to handle (bracket
   identifiers, `CLUSTERED` PKs with index options, commented-out tables/columns, unusual
   identifiers like `PorMasterHdr+`, `IDENTITY`/`DEFAULT`/`COLLATE`); captured as backlog

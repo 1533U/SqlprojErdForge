@@ -18,6 +18,7 @@
     <Folder Include="purple" />
     <Folder Include="syspro" />
     <Folder Include="edge" />
+    <Folder Include="comments" />
   </ItemGroup>
   <ItemGroup>
     <!-- Hand-written extension tables (clean, FK graph lives here) -->
@@ -34,6 +35,8 @@
     <!-- Edge cases -->
     <Build Include="edge\dbo.TierMatrix.sql" />
     <Build Include="edge\dbo.PorMasterHdr+.sql" />
+    <!-- All four comment slots + the rule-5 footer fallback (docs/04 worked example) -->
+    <Build Include="comments\dbo.CommentSlots.sql" />
     <!-- Filtering distractors: a non-table build item and a non-build item.
          The loader must include these in discovery but identify them as
          non-tables (no CREATE TABLE), not crash on them. -->

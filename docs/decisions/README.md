@@ -13,3 +13,7 @@ immutable once accepted; if a decision changes, add a new ADR that supersedes th
 | [ADR-0006](ADR-0006-comment-trivia-model.md) | Comment trivia model (four slots) | Accepted |
 | [ADR-0007](ADR-0007-edit-apply-ux.md) | Edit-apply UX via diff preview | Accepted |
 | [ADR-0008](ADR-0008-fk-only-relationships.md) | Relationships from declared FK constraints only | Accepted |
+| [ADR-0009](ADR-0009-parser-recursive-descent.md) | Hand-written recursive-descent parser (over Chevrotain) | Accepted |
+| [ADR-0010](ADR-0010-formatting-strategy-lazy-canonicalization.md) | Formatting strategy: lazy canonicalization ("format on touch") — settles D1 | Accepted |
+| [ADR-0011](ADR-0011-syspro-mirror-read-only.md) | Syspro mirror tables are read-only — settles D2 | Accepted |
+| [ADR-0012](ADR-0012-allowlist-scope.md) | Allowlist scope: temporal columns, PERIOD, post-`GO` statements | Accepted |

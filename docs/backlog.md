@@ -11,19 +11,22 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 |----|------|--------|-------|
 | P0-1 | Collect a corpus of real `.sql` files for tests | done | curated set in `test/fixtures/` from OSConnectWeylandtsDB |
 | P0-1b | Add synthetic `.sqlproj` entry point referencing fixtures | done | `test/fixtures/SampleErd.sqlproj` |
-| P0-12 | Project loader: parse `.sqlproj` XML, normalize backslash paths, filter to table files | todo | entry point is the project file, not a folder scan |
-| P0-13 | Discovery integration smoke test against the real ~807-item project | todo | read-only, external path |
-| P0-2 | Choose parser approach (recursive-descent vs Chevrotain) | todo | open decision |
-| P0-8 | Handle real-world syntax: bracket identifiers, CLUSTERED PK + index options, IDENTITY/DEFAULT/COLLATE | todo | surfaced from fixtures |
-| P0-9 | Ignore commented-out schema (no model entry, no ERD node, no diagnostic) | todo | convention C9; e.g. TierMatrix, commented-out FKs in pr_procurement_item |
-| P0-10 | Decide formatting strategy (D1) to avoid huge diffs on non-canonical files | todo | risk R1; highest priority, decide first |
-| P0-11 | Build ERD edges from declared FKs only (no inference) | todo | convention C10 / ADR-0008 |
-| D2 | Decide Syspro mirror table scope (read-only / excluded / editable) | todo | risk R3; leaning read-only |
-| P0-3 | Implement parser for the supported subset → model | todo | per `03`/`05` |
-| P0-4 | Implement canonical emitter (model → `.sql`) | todo | order- & comment-preserving |
-| P0-5 | CLI/test harness: parse → emit → parse | todo | |
-| P0-6 | Idempotency tests incl. all 4 comment slots + footer fallback | todo | exit criterion |
-| P0-7 | Diagnostics for unsupported constructs | todo | fail loudly |
+| P0-1c | Add comment-slots fixture (4 slots + rule-5 fallback) | done | `test/fixtures/comments/dbo.CommentSlots.sql` |
+| P0-12 | Project loader: parse `.sqlproj` XML, normalize backslash paths, filter to table files | done | `src/project.ts`; entry point is the project file |
+| P0-13 | Discovery integration smoke test against the real ~760-item project | done | `npm run spike:real`; 96 tables, 125 edges, no crashes |
+| P0-2 | Choose parser approach (recursive-descent vs Chevrotain) | done | recursive-descent — ADR-0009 |
+| P0-8 | Handle real-world syntax: bracket identifiers, CLUSTERED PK + index options, IDENTITY/DEFAULT/COLLATE, temporal/PERIOD | done | `src/tokenizer.ts`/`src/parser.ts`; temporal added per ADR-0012 |
+| P0-9 | Ignore commented-out schema (no model entry, no ERD node, no diagnostic) | done | C9; verified on TierMatrix + commented FKs/columns |
+| P0-10 | Decide formatting strategy (D1) to avoid huge diffs on non-canonical files | done | lazy canonicalization — ADR-0010 |
+| P0-11 | Build ERD edges from declared FKs only (no inference) | done | `src/erd.ts`; C10 / ADR-0008 |
+| D2 | Decide Syspro mirror table scope (read-only / excluded / editable) | done | read-only — ADR-0011 |
+| P0-3 | Implement parser for the supported subset → model | done | `src/parser.ts` per `03`/`05` |
+| P0-4 | Implement canonical emitter (model → `.sql`) | done | `src/emitter.ts`; order- & comment-preserving |
+| P0-5 | CLI/test harness: parse → emit → parse | done | `src/cli.ts` (`npm run spike`) |
+| P0-6 | Idempotency tests incl. all 4 comment slots + footer fallback | done | fixed point green on full corpus |
+| P0-7 | Diagnostics for unsupported constructs | done | loud diagnostics; no crashes |
+| P0-14 | Triage real-project coverage gaps (proc/view files, post-`GO` objects, extra modifiers) | todo | from P0-13; informs allowlist + discovery file-role detection |
+| P0-15 | Pin exact canonical formatting rules (indent/alignment/casing/bracketing) | todo | flows from D1; spike uses a placeholder style |
 
 ## Phase 1 — Read-only live ERD
 

@@ -55,6 +55,12 @@ shipping_type/buyer; item → header/supplier), with some intentionally dangling
 | `dbo.TierMatrix.sql` | **Entirely commented-out** `CREATE TABLE` — parser must yield no table (and not crash) |
 | `dbo.PorMasterHdr+.sql` | Table/constraint name containing `+`; `PRIMARY KEY CLUSTERED` with commented-out `WITH (...)` options and `ON [PRIMARY]`; mixed bracketed/unbracketed columns |
 
+## `comments/` — comment model coverage
+
+| File | Exercises |
+|---|---|
+| `dbo.CommentSlots.sql` | All four comment slots (header, member-leading, member-trailing, footer) **plus** the rule-5 footer fallback (a body comment with no member below). Mirrors the worked example in [`docs/04-comment-model.md`](../../docs/04-comment-model.md) so the Phase 0 spike can assert exact attachment. |
+
 ## Source
 
 Copied from `/home/gerhard/Projects/Purple/OSConnectWeylandtsDB-master`. The original

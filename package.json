@@ -1,0 +1,16 @@
+{
+  "name": "sqlproj-erdforge-spike",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase 0 parser/emitter idempotency spike for SqlprojErdForge.",
+  "scripts": {
+    "spike": "node src/cli.ts",
+    "spike:real": "node src/cli.ts --real",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
