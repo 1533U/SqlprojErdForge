@@ -8,6 +8,16 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 ## [Unreleased]
 
 ### Added
+- **Phase 1 read-only ERD** (`P1-1`…`P1-6`): VS Code extension with **Open ERD** command on
+  `.sqlproj` files; webview React app with React Flow table nodes (PK/FK/NN badges) and FK
+  edge lines; ELK auto-layout for unpositioned tables; debounced `FileSystemWatcher`
+  refresh; `.erdforge/layout.json` sidecar read/write on drag; parse diagnostics in the
+  Problems panel. Build with `npm run compile`; F5 via `.vscode/launch.json`. Manually
+  verified on `test/fixtures/SampleErd.sqlproj`.
+- Committed sample layout sidecar at `test/fixtures/.erdforge/layout.json` (ADR-0005).
+- VS Code dev config: `.vscode/launch.json`, `.vscode/tasks.json`.
+- Extension/webview build via `esbuild.mjs`; split TypeScript configs for spike, extension,
+  and webview.
 - **Phase 0 parser/emitter spike** (`src/`): trivia-preserving tokenizer
   (`src/tokenizer.ts`), hand-written recursive-descent parser (`src/parser.ts`), canonical
   emitter (`src/emitter.ts`), `.sqlproj` project loader (`src/project.ts`), FK-only ERD edge
@@ -34,8 +44,15 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
   folder scan (`P0-1b`); added loader tasks `P0-12`/`P0-13` and detailed the Project loader
   component in `02-architecture.md`.
 
+### Fixed
+- Extension activation under `"type": "module"`: host entry is `out/extension.cjs` (CommonJS).
+- ELK layout crash when an FK references a table outside the project (e.g.
+  `dbo.pr_tariff_code` in fixtures) — diagram edges now require both endpoints as nodes.
+- React Flow FK lines invisible on custom table nodes — added connection handles and themed
+  edge styling.
+
 ### Changed
-- README status + quick-start section now reflect Phase 0 completion and `npm run spike`.
+- README status + quick-start: Phase 0 spike commands and Phase 1 F5 extension workflow.
 - Added convention **C9**: commented-out schema (tables, columns, constraints) is ignored
   entirely — no model entry, no ERD node, no diagnostic. Updated `03-sql-conventions.md`,
   `04-comment-model.md`, and backlog `P0-9`.

@@ -67,13 +67,15 @@ See [`docs/02-architecture.md`](docs/02-architecture.md) for the full picture an
 
 ## Status
 
-**Phase 0 complete** — the parse↔emit idempotency spike is implemented and green on the
-fixture corpus. Phase 1 (VS Code extension + read-only ERD) is next. See
-[`docs/STATUS.md`](docs/STATUS.md) for the live snapshot.
+**Phase 1 working on fixtures** — VS Code extension + read-only ERD verified on
+`SampleErd.sqlproj` (tables, FK edges, layout sidecar). Phase 0 spike remains green.
+Next: real-project smoke test and live-refresh check. See [`docs/STATUS.md`](docs/STATUS.md).
 
-## Quick start (Phase 0 spike)
+## Quick start
 
-Requires Node.js (runs TypeScript natively; no build step).
+### Phase 0 spike (CLI)
+
+Requires Node.js (runs TypeScript natively; no build step for the spike).
 
 ```bash
 npm install
@@ -82,4 +84,17 @@ npm run spike:real   # read-only discovery smoke test on the real ~760-file proj
 npm run typecheck
 ```
 
-Entry points: [`src/cli.ts`](src/cli.ts) (harness), [`test/fixtures/SampleErd.sqlproj`](test/fixtures/SampleErd.sqlproj) (synthetic project).
+### Phase 1 extension (VS Code)
+
+```bash
+npm install
+npm run compile      # bundles extension host + webview
+npm run typecheck
+```
+
+Then press **F5** in VS Code (**Run Extension**), open a `.sqlproj` (e.g.
+`test/fixtures/SampleErd.sqlproj`), and run **ErdForge: Open ERD** from the context menu
+or command palette.
+
+Entry points: [`src/cli.ts`](src/cli.ts) (harness), [`src/extension/main.ts`](src/extension/main.ts)
+(extension), [`test/fixtures/SampleErd.sqlproj`](test/fixtures/SampleErd.sqlproj) (synthetic project).

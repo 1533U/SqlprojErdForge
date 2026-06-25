@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["react", "react-dom"],
+    "allowImportingTsExtensions": false
+  },
+  "include": ["webview/src/**/*.ts", "webview/src/**/*.tsx"]
+}

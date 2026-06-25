@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "tables": {
+    "dbo.CommentSlots": {
+      "x": 12,
+      "y": 12
+    },
+    "dbo.InvBuyer": {
+      "x": 312,
+      "y": 12
+    },
+    "dbo.PorMasterHdr+": {
+      "x": 485,
+      "y": 346
+    },
+    "dbo.pr_buying_season": {
+      "x": 2229,
+      "y": 2109
+    },
+    "dbo.pr_port": {
+      "x": 2713,
+      "y": 1079
+    },
+    "dbo.pr_procurement_header": {
+      "x": 1256,
+      "y": 1019
+    },
+    "dbo.pr_procurement_header_status": {
+      "x": 2037,
+      "y": 2437
+    },
+    "dbo.pr_procurement_item": {
+      "x": 798,
+      "y": -121
+    },
+    "dbo.pr_shipping_type": {
+      "x": 2457,
+      "y": 1797
+    },
+    "dbo.pr_supplier": {
+      "x": 2283,
+      "y": 75
+    },
+    "dbo.pr_syspro_buyer": {
+      "x": 2458,
+      "y": 1464
+    }
+  }
+}

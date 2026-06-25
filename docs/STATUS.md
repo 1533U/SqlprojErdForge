@@ -4,10 +4,10 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-25
-**Current phase:** Phase 1 — Read-only live ERD (not started)
-**Overall state:** Phase 0 complete — parser/emitter spike green on fixtures; discovery
-smoke-tested on the real 760-item project. Two Phase 0 follow-ups remain open (`P0-14`,
-`P0-15`); primary work is the VS Code extension + read-only ERD.
+**Current phase:** Phase 1 — Read-only live ERD (verified on fixtures; real-project smoke test next)
+**Overall state:** Phase 0 complete; Phase 1 implemented and manually verified on
+`SampleErd.sqlproj` (tables, FK edges, layout sidecar). Spike/typecheck/compile green.
+Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
 
 ## Done
 
@@ -31,15 +31,23 @@ smoke-tested on the real 760-item project. Two Phase 0 follow-ups remain open (`
   ([ADR-0012](decisions/ADR-0012-allowlist-scope.md)).
 - **Phase 0 spike implemented** ([`src/`](../src/)): trivia-preserving tokenizer, parser,
   canonical emitter, `.sqlproj` loader (`P0-12`), FK-only ERD edges (`P0-11`), and a CLI
-  harness (`P0-5`). All exit criteria pass on the fixtures:
-  - stable fixed point `emit(parse(emit(x))) === emit(parse(x))` on every fixture (`P0-6`);
-  - all four comment slots + rule-5 fallback preserved (`P0-6`);
-  - commented-out schema ignored — no table, node, or diagnostic (`P0-9` / C9);
-  - edges only from declared FKs; commented-out FKs and FK-less tables produce none
-    (`P0-11` / C10);
-  - unsupported constructs raise loud diagnostics, no crashes (`P0-7`).
+  harness (`P0-5`). All exit criteria pass on the fixtures.
 - **Discovery smoke test** (`P0-13`) against the real project (760 build items): 96 tables,
   125 FK edges, no crashes; coverage gaps captured for triage (see findings below).
+- **Phase 1 read-only ERD** (`P1-1`…`P1-6`) — implemented and verified on fixtures via F5:
+  - VS Code extension with **Open ERD** on `.sqlproj`
+    ([`src/extension/`](../src/extension/), [`package.json`](../package.json),
+    [`.vscode/launch.json`](../.vscode/launch.json)).
+  - Webview React + React Flow (table nodes, PK/FK/NN badges, visible FK edge lines)
+    ([`webview/`](../webview/)).
+  - ELK auto-layout + grid fallback; edges filtered to tables present in the project
+    ([`src/graph.ts`](../src/graph.ts)).
+  - Debounced live refresh ([`src/extension/watcher.ts`](../src/extension/watcher.ts)).
+  - Layout sidecar at `.erdforge/layout.json` — committed for fixtures
+    ([`test/fixtures/.erdforge/layout.json`](../test/fixtures/.erdforge/layout.json)).
+  - Parse diagnostics in Problems panel ([`src/extension/diagnostics.ts`](../src/extension/diagnostics.ts)).
+  - Extension host entry is `out/extension.cjs` (CommonJS) because root `package.json` uses
+    `"type": "module"` for the Node spike CLI.
 
 ## In progress
 
@@ -47,14 +55,14 @@ smoke-tested on the real 760-item project. Two Phase 0 follow-ups remain open (`
 
 ## Next up (immediate — start here next session)
 
-1. Pin the **exact canonical formatting rules** (indent width, alignment, casing, identifier
-   bracketing policy) — the spike uses a simple deterministic style; finalize before P4-1.
-2. Triage real-project coverage gaps surfaced by `P0-13` (`P0-14`): proc/view/function files
-   (not table files), post-`GO` objects, and extra column modifiers.
-3. Begin **Phase 1** — VS Code extension scaffold + read-only ERD (`P1-1`…).
+1. **Real-project ERD smoke test** — open OSConnectWeylandtsDB (~96 tables, 125 edges);
+   confirm performance, layout, and Problems panel at scale.
+2. **Live refresh check** — edit/save a fixture `.sql` file; diagram should update within ~1 s.
+3. Pin the **exact canonical formatting rules** (`P0-15`).
+4. Triage real-project coverage gaps (`P0-14`).
 
-> Tip for the next session: read this file, then `AGENTS.md`, then `docs/backlog.md`. Run the
-> spike with `npm run spike` (fixtures) and `npm run spike:real` (discovery smoke test).
+> Tip: `npm run spike`, `npm run typecheck`, `npm run compile`, then F5. In the Extension
+> Development Host, **File → Open Folder** to the repo before **Open ERD**.
 
 ## Blocked / needs input
 
@@ -73,6 +81,8 @@ smoke-tested on the real 760-item project. Two Phase 0 follow-ups remain open (`
   tables. **All relationships are declared as FK constraints in code; the tool never infers
   them** (C10 / ADR-0008). FK-less tables correctly show no edges.
 - `ALTER TABLE` is not used for schema definition (confirms convention C1).
+- FK targets not in the `.sqlproj` (e.g. `dbo.pr_tariff_code` referenced by
+  `pr_procurement_item`) are omitted from the diagram — both endpoints must exist as nodes.
 
 ## Recently settled decisions
 

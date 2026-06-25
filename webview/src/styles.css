@@ -1,0 +1,190 @@
+@import "@xyflow/react/dist/style.css";
+
+:root {
+  color-scheme: light dark;
+  font-family: var(--vscode-font-family, system-ui, sans-serif);
+  font-size: var(--vscode-font-size, 13px);
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--vscode-editor-background, #1e1e1e);
+  color: var(--vscode-editor-foreground, #cccccc);
+}
+
+.erdforge-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.erdforge-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
+  background: var(--vscode-sideBar-background, #252526);
+}
+
+.erdforge-header h1 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.erdforge-header span {
+  opacity: 0.75;
+  font-size: 12px;
+}
+
+.erdforge-canvas {
+  flex: 1;
+  min-height: 0;
+}
+
+.erdforge-loading,
+.erdforge-error {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.erdforge-error p {
+  color: var(--vscode-errorForeground, #f48771);
+}
+
+.table-node {
+  min-width: 240px;
+  max-width: 360px;
+  border: 1px solid var(--vscode-panel-border, #3c3c3c);
+  border-radius: 6px;
+  background: var(--vscode-editor-background, #1e1e1e);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+}
+
+.table-node--readonly {
+  border-style: dashed;
+  opacity: 0.92;
+}
+
+.table-node__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
+  background: var(--vscode-sideBarSectionHeader-background, #2d2d2d);
+}
+
+.table-node__schema {
+  opacity: 0.7;
+}
+
+.table-node__name {
+  font-weight: 600;
+}
+
+.table-node__badge {
+  margin-left: auto;
+  font-size: 10px;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.table-node__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-node__row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--vscode-panel-border, #3c3c3c) 50%, transparent);
+}
+
+.table-node__row:last-child {
+  border-bottom: none;
+}
+
+.table-node__col-name {
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.table-node__col-type {
+  opacity: 0.65;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.table-node__badges {
+  display: flex;
+  gap: 4px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+}
+
+.badge--pk {
+  background: #3a5a40;
+  color: #d8f3dc;
+}
+
+.badge--fk {
+  background: #1d3557;
+  color: #a8dadc;
+}
+
+.badge--nn {
+  background: #5c4033;
+  color: #ffe8cc;
+}
+
+.react-flow__node {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.table-node__handle {
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--vscode-focusBorder, #3794ff);
+  background: var(--vscode-editor-background, #1e1e1e);
+}
+
+.table-node__handle--target {
+  left: -4px;
+}
+
+.table-node__handle--source {
+  right: -4px;
+}
+
+.react-flow__edge-path {
+  stroke: var(--vscode-focusBorder, #3794ff);
+  stroke-width: 2;
+}
+
+.react-flow__edge-text {
+  font-size: 10px;
+}

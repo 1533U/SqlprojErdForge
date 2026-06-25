@@ -23,6 +23,12 @@ For pure parse↔emit round-trip tests, point the harness at the individual `.sq
 integration smoke test should run discovery against the real project (~807 build items) at
 `/home/gerhard/Projects/Purple/OSConnectWeylandtsDB-master/OSConnectWeylandtsDB.sqlproj`.
 
+## `.erdforge/layout.json` — committed diagram layout
+
+Per [ADR-0005](../../docs/decisions/ADR-0005-layout-sidecar.md), diagram coordinates for
+`SampleErd.sqlproj` live at [`.erdforge/layout.json`](.erdforge/layout.json). Positions
+survive re-open; drag updates are written back by the extension.
+
 ## `purple/` — hand-written extension tables (clean, conventions-aligned)
 
 These match our design closely: named table-level `PK_*` / `FK_*` constraints,
