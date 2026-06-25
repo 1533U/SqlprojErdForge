@@ -1,0 +1,9 @@
+﻿--CREATE TABLE [dbo].[TierMatrix]
+--(
+--	[Tier1]		[nvarchar](255) NULL,
+--	[Trigger1]	[nvarchar](255) NULL,
+--	[Tier2 ]	[nvarchar](255) NULL,
+--	[Trigger2]	[nvarchar](255) NULL,
+--	[Tier3 ]	[nvarchar](255) NULL,
+--	[Trigger3]	[nvarchar](255) NULL
+--)

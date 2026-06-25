@@ -81,12 +81,45 @@ body) becomes a footer comment.
 Diagram coordinates and presentation live only in `.erdforge/layout.json`
 (see [`05-data-model.md`](05-data-model.md)). `.sql` files contain schema only.
 
+## C9 — Commented-out schema is ignored (not modeled, not an error)
+
+A commented-out `CREATE TABLE` is **invisible to the tool**. If a file's `CREATE TABLE` is
+entirely commented out (e.g. `dbo.TierMatrix.sql`), it produces **no table** in the model,
+**no node** on the ERD, and **no diagnostic** — it is simply skipped, as if the file were
+empty of schema.
+
+- The tool never models, renders, or edits commented-out schema, and never rewrites such a
+  file, so the commented text is left byte-for-byte untouched on disk.
+- This applies at the member level too: a commented-out column or constraint is **not** a
+  column/relationship in the model. Its text is preserved only as ordinary comment trivia
+  (see [`04-comment-model.md`](04-comment-model.md)); it never appears as a column or an FK
+  edge.
+- Real example: `dbo.pr_procurement_item.sql` has commented-out FK constraints — those
+  relationships must not appear on the ERD.
+
+## C10 — Relationships come only from declared `FOREIGN KEY` constraints
+
+ERD relationships (edges) are derived **exclusively** from the `FOREIGN KEY` constraints
+declared in the `.sql` files. Relationships are defined in code, full stop.
+
+- ✅ An edge exists if and only if there is a declared (non-commented) `FOREIGN KEY`
+  constraint for it.
+- ❌ **Never infer relationships** from naming conventions, column-name matching
+  (e.g. `supplier_id` → `pr_supplier`), data types, or any other heuristic.
+- A table with no FK constraints simply has no outgoing edges — that is correct and
+  intentional, not a gap to be "filled in" by guessing.
+- Commented-out FKs are not relationships (convention C9).
+
+See [ADR-0008](decisions/ADR-0008-fk-only-relationships.md).
+
 ## Enforcement
 
 | Convention | Enforced by |
 |---|---|
 | C1–C3, C6, C7 | Parser diagnostics (loud failure on violation) |
 | C4, C5 | Canonical formatter + CI format check |
+| C9 | Parser skips commented-out schema silently (no model entry, no diagnostic) |
+| C10 | ERD edges built only from declared FK constraints; no inference logic exists |
 | Overall correctness | Optional DACPAC build in CI |
 
 ## What we give up (accepted trade-offs)

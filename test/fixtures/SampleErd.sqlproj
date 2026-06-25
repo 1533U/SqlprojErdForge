@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Synthetic SQL Server database project for tests.
+  Mirrors the real .sqlproj shape just enough to exercise project discovery:
+  - <Build Include="..."> items use Windows backslash paths (must be normalized).
+  - References tables across subfolders (purple/syspro/edge).
+  - Includes a non-table build item and a <None> item to test filtering.
+  Paths are relative to this .sqlproj file.
+-->
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Name>SampleErd</Name>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql130DatabaseSchemaProvider</DSP>
+    <ModelCollation>1033, CI</ModelCollation>
+    <DefaultCollation>Latin1_General_BIN</DefaultCollation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="purple" />
+    <Folder Include="syspro" />
+    <Folder Include="edge" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Hand-written extension tables (clean, FK graph lives here) -->
+    <Build Include="purple\dbo.pr_procurement_header.sql" />
+    <Build Include="purple\dbo.pr_procurement_item.sql" />
+    <Build Include="purple\dbo.pr_supplier.sql" />
+    <Build Include="purple\dbo.pr_port.sql" />
+    <Build Include="purple\dbo.pr_buying_season.sql" />
+    <Build Include="purple\dbo.pr_shipping_type.sql" />
+    <Build Include="purple\dbo.pr_procurement_header_status.sql" />
+    <Build Include="purple\dbo.pr_syspro_buyer.sql" />
+    <!-- Machine-exported ERP mirror table (no FKs) -->
+    <Build Include="syspro\dbo.InvBuyer.sql" />
+    <!-- Edge cases -->
+    <Build Include="edge\dbo.TierMatrix.sql" />
+    <Build Include="edge\dbo.PorMasterHdr+.sql" />
+    <!-- Filtering distractors: a non-table build item and a non-build item.
+         The loader must include these in discovery but identify them as
+         non-tables (no CREATE TABLE), not crash on them. -->
+    <None Include="README.md" />
+  </ItemGroup>
+</Project>

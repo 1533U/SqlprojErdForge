@@ -40,9 +40,18 @@ a second authoritative store of schema data that could drift from the files.
 ## Components
 
 ### 1. Project loader
-- Discovers the `.sqlproj` and the set of `.sql` files it includes.
-- Conventions let us keep this simple: one table per file, file name = `schema.table.sql`.
-- Produces the ordered list of source files to parse.
+- **The entry point is the `.sqlproj`, not a folder scan.** The loader parses the project's
+  MSBuild XML and collects its `<Build Include="...">` items — this is the authoritative
+  list of files in the project.
+- **Normalizes paths**: `<Build Include>` paths use Windows backslashes and are relative to
+  the `.sqlproj`; they must be normalized to resolve on any OS.
+- **Filters to table files**: a real project mixes tables with views, procedures, functions,
+  sequences, and pre/post-deploy scripts. The loader identifies table files (by detecting a
+  `CREATE TABLE`) and ignores the rest without crashing.
+- Conventions keep the rest simple: one table per file, file name = `schema.table.sql`.
+- Produces the ordered list of table source files to parse.
+- Tested against the synthetic `test/fixtures/SampleErd.sqlproj` (unit) and the real
+  ~807-item project (integration smoke test).
 
 ### 2. Parser (pure TypeScript)
 - Parses the supported declarative T-SQL subset (`CREATE TABLE` + table-level

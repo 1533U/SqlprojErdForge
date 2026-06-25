@@ -12,3 +12,4 @@ immutable once accepted; if a decision changes, add a new ADR that supersedes th
 | [ADR-0005](ADR-0005-layout-sidecar.md) | Committed JSON layout sidecar | Accepted |
 | [ADR-0006](ADR-0006-comment-trivia-model.md) | Comment trivia model (four slots) | Accepted |
 | [ADR-0007](ADR-0007-edit-apply-ux.md) | Edit-apply UX via diff preview | Accepted |
+| [ADR-0008](ADR-0008-fk-only-relationships.md) | Relationships from declared FK constraints only | Accepted |

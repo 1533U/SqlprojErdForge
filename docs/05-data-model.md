@@ -114,7 +114,9 @@ The diagram is computed from `ProjectModel`:
 
 - **Nodes** = tables; rows = columns (PK/FK badges from constraints).
 - **Edges** = foreign-key constraints (`Table.members` where `constraintType ===
-  "foreignKey"`), from local table → `references.table`.
+  "foreignKey"`), from local table → `references.table`. Edges are derived **only** from
+  declared FK constraints — never inferred from names or types (convention C10 /
+  [ADR-0008](decisions/ADR-0008-fk-only-relationships.md)).
 
 ## Layout sidecar
 

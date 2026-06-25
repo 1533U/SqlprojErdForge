@@ -13,10 +13,17 @@ criterion so we never build UI on top of an unproven foundation.
 - Build a small CLI/test harness: read files → parse → emit → re-parse.
 
 **Exit criteria (must all pass):**
-- `parse → emit → parse` is **byte-stable** (after one normalizing pass) on a corpus of
-  our real project files.
+- `parse → emit → parse` reaches a **stable fixed point after one normalization pass** on
+  the fixture corpus: the *first* emit may reformat an already-non-canonical file, but
+  `emit(parse(emit(x)))` must be byte-identical to `emit(parse(x))` (idempotent thereafter),
+  and the normalization diff must be reviewed as acceptable. (True byte-stability against
+  the *original* messy files is not the bar — see risk register R1/R2.)
+- The normalization diff on real files is **minimal and acceptable** — not a wholesale
+  rewrite that would make review useless.
 - Stability holds on files exercising **all four comment slots** plus the rule-5 footer
   fallback ([`04-comment-model.md`](04-comment-model.md)).
+- Commented-out schema is ignored (no model entry, no node, no diagnostic; C9), and
+  relationships come only from declared FKs (C10).
 - Unsupported constructs produce clear diagnostics, not crashes or silent drops.
 
 > If Phase 0 fails, the bidirectional idea needs rethinking — better to learn it here than
@@ -78,19 +85,39 @@ comment/order-preserving, and the project still builds to a DACPAC in CI.
 
 ## Risk register
 
-| Risk | Mitigation | Phase |
-|---|---|---|
-| Round-trip not faithful | Idempotency spike before any UI | 0 |
-| T-SQL surface area creeps | Allowlist + loud diagnostics; conventions doc | 0, ongoing |
-| Comment drift | Trivia model + no-reorder rule + dedicated tests | 0 |
-| Parser too lenient (silent misread) | Fail loudly; DACPAC build as backstop | 0, 4 |
-| Diagram layout instability | Committed JSON sidecar keyed by identity | 1 |
-| Stale edit applied after file changed | Recompute candidate + re-prompt on conflict | 3 |
-| Multi-file rename inconsistency | Atomic `WorkspaceEdit` + Refactor Preview | 3, 4 |
+| ID | Risk | Mitigation | Phase |
+|---|---|---|---|
+| R1 | **Canonical format vs real files** — existing files are not canonically formatted and are inconsistent (bracketed/unbracketed, mixed indent, two styles); reformatting on first edit could produce huge diffs, defeating C4's clean-diff goal | Decide a formatting strategy (D1 below): canonicalize-only-edited-tables, or "preserve existing formatting" instead of imposing one style, or a one-time bulk format migration. Validate on fixtures in Phase 0 | 0 |
+| R2 | **Idempotency bar unrealistic on messy input** — true byte-stability vs original files is impossible | Reframed exit criterion: stable fixed point after one normalization pass + acceptable minimal diff (done, see Phase 0) | 0 |
+| R3 | **Syspro mirror tables** — machine-exported, no FKs; editing them would be clobbered on next ERP export | Decide scope (D2 below): likely read-only or excluded; focus editing on `pr_*` extension schemas | 0/1 |
+| R4 | **Parser effort underestimated** — types, `DEFAULT`/`COLLATE`/`IDENTITY`/computed columns, bracket handling add up | Treat the size estimate as a hypothesis; let the Phase 0 spike measure real effort | 0 |
+| | Round-trip not faithful | Idempotency spike before any UI | 0 |
+| | T-SQL surface area creeps | Allowlist + loud diagnostics; conventions doc | 0, ongoing |
+| | Comment drift | Trivia model + no-reorder rule + dedicated tests | 0 |
+| | Parser too lenient (silent misread) | Fail loudly; DACPAC build as backstop | 0, 4 |
+| | Diagram layout instability | Committed JSON sidecar keyed by identity | 1 |
+| | Stale edit applied after file changed | Recompute candidate + re-prompt on conflict | 3 |
+| | Multi-file rename inconsistency | Atomic `WorkspaceEdit` + Refactor Preview | 3, 4 |
+
+> Note: ERD relationships are **declared FKs only, never inferred** (convention C10 /
+> [ADR-0008](decisions/ADR-0008-fk-only-relationships.md)). A sparse diagram for FK-less
+> tables is correct behavior, not a risk to mitigate.
 
 ## Open decisions (to confirm during Phase 0)
 
+- **D1 — Formatting strategy (highest priority; addresses R1):** canonicalize only the
+  tables we edit, vs "preserve existing formatting" rather than imposing a canonical style,
+  vs a one-time bulk format migration. This is the hinge the clean-diff/bidirectional value
+  depends on — decide first.
+- **D2 — Syspro mirror tables (addresses R3):** treat as read-only, exclude entirely, or
+  allow editing? Leaning read-only/excluded.
 - Parser approach: hand-written recursive-descent vs Chevrotain grammar.
-- Exact canonical formatting rules (indentation width, alignment, casing).
+- Exact canonical formatting rules (indentation width, alignment, casing) — flows from D1.
 - Whether `leadingComments` also render on the diagram or only `trailingComment`.
 - Whether the layout sidecar is committed by default for every team/repo.
+
+## Settled decisions (do not revisit without a new ADR)
+
+- Relationships are derived **only** from declared FK constraints; never inferred
+  (C10 / [ADR-0008](decisions/ADR-0008-fk-only-relationships.md)).
+- Commented-out schema is ignored entirely (C9).

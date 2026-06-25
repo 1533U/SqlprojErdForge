@@ -8,6 +8,18 @@ This is the same "trivia attachment" technique formatters like Prettier use: a c
 anchored to the nearest stable node, not to a byte offset, so it stays correct even after
 the file is regenerated.
 
+## Commented-out schema is not a comment slot
+
+Before applying any of the rules below, note the boundary set by convention C9
+([`03-sql-conventions.md`](03-sql-conventions.md)): **commented-out schema is ignored**, not
+modeled.
+
+- A fully commented-out `CREATE TABLE` yields no table, no ERD node, and no diagnostic.
+- A commented-out column or constraint is never a column/relationship; its text is kept
+  only as ordinary comment trivia (per the slots below) and never becomes schema.
+
+The rest of this document concerns comments attached to **live** (non-commented) schema.
+
 ## Members
 
 A table body is an **ordered list of members**, where a member is **either a column or a
