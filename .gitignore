@@ -1,0 +1,17 @@
+# Node / VS Code extension build artifacts
+node_modules/
+out/
+dist/
+*.vsix
+.vscode-test/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# NOTE: .erdforge/layout.json is intentionally NOT ignored.
+# Diagram layout is a committed, shared, diffable artifact (see ADR-0005).
