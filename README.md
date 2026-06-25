@@ -67,6 +67,19 @@ See [`docs/02-architecture.md`](docs/02-architecture.md) for the full picture an
 
 ## Status
 
-Pre-implementation. This repository currently contains the **design and project plan
-only**. Phase 0 (the parse↔emit idempotency spike) is the next concrete step — see
-[`docs/STATUS.md`](docs/STATUS.md) for the live snapshot and the roadmap for detail.
+**Phase 0 complete** — the parse↔emit idempotency spike is implemented and green on the
+fixture corpus. Phase 1 (VS Code extension + read-only ERD) is next. See
+[`docs/STATUS.md`](docs/STATUS.md) for the live snapshot.
+
+## Quick start (Phase 0 spike)
+
+Requires Node.js (runs TypeScript natively; no build step).
+
+```bash
+npm install
+npm run spike        # fixture corpus: idempotency, comments, C9, C10 — must pass
+npm run spike:real   # read-only discovery smoke test on the real ~760-file project
+npm run typecheck
+```
+
+Entry points: [`src/cli.ts`](src/cli.ts) (harness), [`test/fixtures/SampleErd.sqlproj`](test/fixtures/SampleErd.sqlproj) (synthetic project).

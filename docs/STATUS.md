@@ -4,16 +4,17 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-25
-**Current phase:** Phase 0 — Parser/emitter spike (exit criteria met)
-**Overall state:** Phase 0 spike implemented and green on the fixture corpus; discovery
-smoke-tested against the real 760-item project. Ready to start Phase 1.
+**Current phase:** Phase 1 — Read-only live ERD (not started)
+**Overall state:** Phase 0 complete — parser/emitter spike green on fixtures; discovery
+smoke-tested on the real 760-item project. Two Phase 0 follow-ups remain open (`P0-14`,
+`P0-15`); primary work is the VS Code extension + read-only ERD.
 
 ## Done
 
 - Project scope, architecture, and tech stack defined ([`docs/`](.)).
 - SQL conventions, comment model, and data model specified.
 - Edit/apply UX and phased roadmap documented.
-- 11 ADRs recorded for the key decisions (ADR-0001…0012; 0009–0012 added this session).
+- 12 ADRs recorded for the key decisions (ADR-0001…0012).
 - Project-management scaffolding in place (AGENTS.md, STATUS, backlog, CHANGELOG).
 - **Test fixture corpus** curated from the example `OSConnectWeylandtsDB` project
   ([`test/fixtures/`](../test/fixtures/)) — clean extension tables, a Syspro mirror table,

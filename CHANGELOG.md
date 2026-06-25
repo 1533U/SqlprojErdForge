@@ -35,6 +35,7 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
   component in `02-architecture.md`.
 
 ### Changed
+- README status + quick-start section now reflect Phase 0 completion and `npm run spike`.
 - Added convention **C9**: commented-out schema (tables, columns, constraints) is ignored
   entirely — no model entry, no ERD node, no diagnostic. Updated `03-sql-conventions.md`,
   `04-comment-model.md`, and backlog `P0-9`.
