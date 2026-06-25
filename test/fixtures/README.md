@@ -26,8 +26,13 @@ integration smoke test should run discovery against the real project (~807 build
 ## `.erdforge/layout.json` — committed diagram layout
 
 Per [ADR-0005](../../docs/decisions/ADR-0005-layout-sidecar.md), diagram coordinates for
-`SampleErd.sqlproj` live at [`.erdforge/layout.json`](.erdforge/layout.json). Positions
-survive re-open; drag updates are written back by the extension.
+`SampleErd.sqlproj` live at [`.erdforge/layout.json`](.erdforge/layout.json). Keys are
+`schema.table` (e.g. `dbo.Customer` for the comment-slots fixture file
+`comments/dbo.CommentSlots.sql`). Positions survive re-open; drag updates are written back
+by the extension.
+
+Run `npm run verify:p1` from the repo root to headlessly check layout roundtrip, live-refresh
+timing, and real-project scale.
 
 ## `purple/` — hand-written extension tables (clean, conventions-aligned)
 

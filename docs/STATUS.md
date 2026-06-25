@@ -4,10 +4,11 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-25
-**Current phase:** Phase 1 — Read-only live ERD (verified on fixtures; real-project smoke test next)
-**Overall state:** Phase 0 complete; Phase 1 implemented and manually verified on
-`SampleErd.sqlproj` (tables, FK edges, layout sidecar). Spike/typecheck/compile green.
-Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
+**Current phase:** Phase 1 complete — read-only live ERD verified (fixtures + real project)
+**Overall state:** Phase 0 complete; Phase 1 exit criteria verified headlessly (`npm run verify:p1`)
+and on fixtures via F5. Real project (96 tables, 105 in-project FK edges) builds in ~750 ms;
+live refresh pipeline under 1 s (+ 500 ms debounce). Two Phase 0 follow-ups remain open
+(`P0-14`, `P0-15`).
 
 ## Done
 
@@ -48,6 +49,11 @@ Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
   - Parse diagnostics in Problems panel ([`src/extension/diagnostics.ts`](../src/extension/diagnostics.ts)).
   - Extension host entry is `out/extension.cjs` (CommonJS) because root `package.json` uses
     `"type": "module"` for the Node spike CLI.
+- **Phase 1 exit criteria verified** (`npm run verify:p1`, 2026-06-25):
+  - Real project ERD: 96 tables, 105 in-project FK edges (20 dangling omitted), ELK layout
+    for all tables in ~750 ms; 606 diagnostics (9 errors from proc temp tables, 597 warnings).
+  - Live refresh: re-parse + graph rebuild on fixture edit in ~160 ms (+ 500 ms debounce).
+  - Drag-to-persist: layout sidecar write/read roundtrip; saved positions survive refresh.
 
 ## In progress
 
@@ -55,14 +61,12 @@ Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
 
 ## Next up (immediate — start here next session)
 
-1. **Real-project ERD smoke test** — open OSConnectWeylandtsDB (~96 tables, 125 edges);
-   confirm performance, layout, and Problems panel at scale.
-2. **Live refresh check** — edit/save a fixture `.sql` file; diagram should update within ~1 s.
-3. Pin the **exact canonical formatting rules** (`P0-15`).
-4. Triage real-project coverage gaps (`P0-14`).
+1. **Phase 2** — column comments on the diagram (`P2-1`, `P2-2`).
+2. Pin the **exact canonical formatting rules** (`P0-15`).
+3. Triage real-project coverage gaps (`P0-14`).
 
-> Tip: `npm run spike`, `npm run typecheck`, `npm run compile`, then F5. In the Extension
-> Development Host, **File → Open Folder** to the repo before **Open ERD**.
+> Tip: `npm run spike`, `npm run verify:p1`, `npm run typecheck`, `npm run compile`, then F5.
+> In the Extension Development Host, **File → Open Folder** to the repo before **Open ERD**.
 
 ## Blocked / needs input
 

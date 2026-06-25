@@ -39,6 +39,7 @@
   "scripts": {
     "spike": "node src/cli.ts",
     "spike:real": "node src/cli.ts --real",
+    "verify:p1": "node src/cli.ts --verify-p1",
     "compile": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.extension.json && tsc --noEmit -p tsconfig.webview.json",

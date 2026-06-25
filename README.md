@@ -67,9 +67,9 @@ See [`docs/02-architecture.md`](docs/02-architecture.md) for the full picture an
 
 ## Status
 
-**Phase 1 working on fixtures** — VS Code extension + read-only ERD verified on
-`SampleErd.sqlproj` (tables, FK edges, layout sidecar). Phase 0 spike remains green.
-Next: real-project smoke test and live-refresh check. See [`docs/STATUS.md`](docs/STATUS.md).
+**Phase 1 complete** — read-only ERD verified on fixtures and the real OSConnectWeylandtsDB
+project (~96 tables, 105 in-project FK edges in ~750 ms). Run `npm run verify:p1` for
+headless exit-criteria checks. Phase 0 spike remains green. See [`docs/STATUS.md`](docs/STATUS.md).
 
 ## Quick start
 
@@ -81,6 +81,7 @@ Requires Node.js (runs TypeScript natively; no build step for the spike).
 npm install
 npm run spike        # fixture corpus: idempotency, comments, C9, C10 — must pass
 npm run spike:real   # read-only discovery smoke test on the real ~760-file project
+npm run verify:p1    # Phase 1 exit criteria: graph, layout, refresh timing, scale
 npm run typecheck
 ```
 

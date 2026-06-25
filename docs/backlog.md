@@ -35,9 +35,10 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 | P1-1 | VS Code extension scaffold + "open ERD" command | done | F5 verified; entry `out/extension.cjs` |
 | P1-2 | Webview React app + React Flow rendering | done | table nodes + Handle-based FK edge lines |
 | P1-3 | ELK auto-layout for unpositioned tables | done | edges filtered to in-project tables; grid fallback |
-| P1-4 | FileSystemWatcher → re-parse → refresh (debounced) | done | 500 ms debounce; live refresh not yet re-tested post-commit |
-| P1-5 | Layout sidecar read/write (`.erdforge/layout.json`) | done | fixture layout committed under `test/fixtures/.erdforge/` |
-| P1-6 | Surface diagnostics in Problems panel | done | `ErdForge` diagnostic source |
+| P1-4 | FileSystemWatcher → re-parse → refresh (debounced) | done | 500 ms debounce; verified via `npm run verify:p1` |
+| P1-5 | Layout sidecar read/write (`.erdforge/layout.json`) | done | fixture layout committed; drag-to-persist verified |
+| P1-6 | Surface diagnostics in Problems panel | done | `ErdForge` diagnostic source; 606 diags on real project |
+| P1-7 | Phase 1 exit-criteria verification (real project + live refresh) | done | `npm run verify:p1`; real project ~750 ms, refresh <1 s |
 
 ## Phase 2 — Column comments on the diagram
 

@@ -45,7 +45,8 @@ criterion so we never build UI on top of an unproven foundation.
 - Editing/saving a `.sql` file updates the diagram within ~1s.
 - Dragging tables persists across reopen via the sidecar.
 
-## Phase 2 — Column comments on the diagram
+> **Status (2026-06-25):** complete — verified headlessly via `npm run verify:p1` on fixtures
+> and the real OSConnectWeylandtsDB project (~96 tables, 105 in-project FK edges).
 
 **Goal:** make comments visible, delivering the "show comments on the ERD" feature.
 

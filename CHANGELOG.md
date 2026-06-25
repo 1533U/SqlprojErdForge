@@ -8,12 +8,14 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 ## [Unreleased]
 
 ### Added
+- **`npm run verify:p1`** — headless Phase 1 exit-criteria checks: fixture + real-project graph
+  build with ELK layout, layout sidecar roundtrip, live-refresh timing, and scale thresholds.
 - **Phase 1 read-only ERD** (`P1-1`…`P1-6`): VS Code extension with **Open ERD** command on
   `.sqlproj` files; webview React app with React Flow table nodes (PK/FK/NN badges) and FK
   edge lines; ELK auto-layout for unpositioned tables; debounced `FileSystemWatcher`
   refresh; `.erdforge/layout.json` sidecar read/write on drag; parse diagnostics in the
-  Problems panel. Build with `npm run compile`; F5 via `.vscode/launch.json`. Manually
-  verified on `test/fixtures/SampleErd.sqlproj`.
+  Problems panel. Build with `npm run compile`; F5 via `.vscode/launch.json`. Exit criteria
+  verified on fixtures and real project (`npm run verify:p1`, 2026-06-25).
 - Committed sample layout sidecar at `test/fixtures/.erdforge/layout.json` (ADR-0005).
 - VS Code dev config: `.vscode/launch.json`, `.vscode/tasks.json`.
 - Extension/webview build via `esbuild.mjs`; split TypeScript configs for spike, extension,
@@ -45,6 +47,8 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
   component in `02-architecture.md`.
 
 ### Fixed
+- Fixture layout sidecar keyed `dbo.CommentSlots` while the table is `dbo.Customer` — corrected
+  in `test/fixtures/.erdforge/layout.json` so drag-to-persist applies to the comment-slots table.
 - Extension activation under `"type": "module"`: host entry is `out/extension.cjs` (CommonJS).
 - ELK layout crash when an FK references a table outside the project (e.g.
   `dbo.pr_tariff_code` in fixtures) — diagram edges now require both endpoints as nodes.
@@ -52,7 +56,8 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
   edge styling.
 
 ### Changed
-- README status + quick-start: Phase 0 spike commands and Phase 1 F5 extension workflow.
+- README status + quick-start: Phase 1 complete; added `npm run verify:p1` to quick start.
+- `docs/STATUS.md`, `docs/backlog.md`, and `docs/07-roadmap.md` synced for Phase 1 completion.
 - Added convention **C9**: commented-out schema (tables, columns, constraints) is ignored
   entirely — no model entry, no ERD node, no diagnostic. Updated `03-sql-conventions.md`,
   `04-comment-model.md`, and backlog `P0-9`.
