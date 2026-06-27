@@ -57,7 +57,7 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 | P3-4 | Change column type / nullability | done | webview Change column mode; IDENTITY/temporal/PK guardrails |
 | P3-5 | Add table (new file + layout entry) | done | webview Add table mode; sqlproj + layout in lockstep |
 | P3-6 | Drop table (delete file, warn on inbound FKs) | done | webview Drop table mode; sqlproj + layout in lockstep |
-| P3-7 | Rename table (file + FKs + layout key migration) | todo | |
+| P3-7 | Rename table (file + FKs + layout key migration) | done | eighth edit op; sequential diff preview |
 | P3-8 | Diff-preview Apply/Discard pipeline | done (partial) | single-file diff + Apply/Discard shipped with P3-1…P3-2; multi-file → P4-3 |
 
 ## Phase 4 — Guardrails & polish

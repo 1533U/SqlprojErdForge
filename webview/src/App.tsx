@@ -8,7 +8,9 @@ import {
   selectColumnForRename,
   selectTableForAddColumn,
   selectTableForDrop,
+  selectTableForRename,
   validateAddTableForm,
+  validateRenameTableForm,
   inboundFkWarningForDrop,
 } from "../../src/edits/editInteraction";
 import { ErdCanvas } from "./canvas/ErdCanvas";
@@ -88,6 +90,17 @@ export function App() {
     [],
   );
 
+  const onRenameTableChange = useCallback(
+    (patch: Partial<Pick<EditSessionState, "renameTableSchema" | "renameTableNewName">>) => {
+      setEdit((current) => ({
+        ...current,
+        message: undefined,
+        ...patch,
+      }));
+    },
+    [],
+  );
+
   const onTableSelect = useCallback(
     (tableKey: string) => {
       setEdit((current) => {
@@ -114,6 +127,20 @@ export function App() {
             message: undefined,
             dropTableTarget: result.tableKey,
             dropTableWarning,
+          };
+        }
+
+        if (current.mode === "renameTable") {
+          const result = selectTableForRename(table, tableKey);
+          if (!result.ok) {
+            return { ...current, message: result.message };
+          }
+          return {
+            ...current,
+            message: undefined,
+            renameTableTarget: result.tableKey,
+            renameTableSchema: result.schema,
+            renameTableNewName: "",
           };
         }
 
@@ -315,6 +342,31 @@ export function App() {
     });
   }, []);
 
+  const onConfirmRenameTable = useCallback(() => {
+    setEdit((current) => {
+      if (!current.renameTableTarget) return current;
+      const tables = payload?.tables ?? [];
+      const result = validateRenameTableForm(
+        tables,
+        current.renameTableTarget,
+        current.renameTableSchema,
+        current.renameTableNewName,
+      );
+      if (!result.ok) {
+        return { ...current, message: result.message };
+      }
+      vscode.postMessage({
+        type: "renameTable",
+        intent: {
+          tableKey: current.renameTableTarget,
+          newTableName: current.renameTableNewName.trim(),
+          newSchema: current.renameTableSchema.trim(),
+        },
+      });
+      return { ...current, message: undefined };
+    });
+  }, [payload]);
+
   useEffect(() => {
     const onMessage = (event: MessageEvent<HostToWebviewMessage>): void => {
       const message = event.data;
@@ -426,6 +478,13 @@ export function App() {
         >
           {edit.mode === "dropTable" ? "Dropping table…" : "Drop table"}
         </button>
+        <button
+          type="button"
+          className={`erdforge-btn${edit.mode === "renameTable" ? " erdforge-btn--active" : ""}`}
+          onClick={() => startEditMode("renameTable")}
+        >
+          {edit.mode === "renameTable" ? "Renaming table…" : "Rename table"}
+        </button>
       </header>
       <div className="erdforge-canvas">
         <ReactFlowProvider>
@@ -443,9 +502,11 @@ export function App() {
             onConfirmChangeColumn={onConfirmChangeColumn}
             onConfirmAddTable={onConfirmAddTable}
             onConfirmDropTable={onConfirmDropTable}
+            onConfirmRenameTable={onConfirmRenameTable}
             onRenameNewNameChange={onRenameNewNameChange}
             onChangeColumnDraftChange={onChangeColumnDraftChange}
             onAddTableChange={onAddTableChange}
+            onRenameTableChange={onRenameTableChange}
             onCancelEdit={cancelEditMode}
           />
         </ReactFlowProvider>

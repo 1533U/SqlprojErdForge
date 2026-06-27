@@ -16,6 +16,10 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
   webview edit session state, and slimmer `verify:p3` helpers in `src/cli.ts`. Behavior unchanged.
 
 ### Added
+- **Phase 3 — rename table** (`P3-7`): webview **Rename table** mode (table header pick → schema
+  + new name → preview); edit op in `src/edits/renameTable.ts` renames the `.sql` file, updates
+  the `.sqlproj` build item (`replaceBuildInclude`), migrates the layout key, and propagates
+  inbound `REFERENCES` across files; registered as eighth edit op; `npm run verify:p3` extended.
 - **Phase 3 — drop table** (`P3-6`): webview **Drop table** mode (table header pick → inbound-FK
   warning → preview); edit op in `src/edits/dropTable.ts` deletes the `.sql` file, removes the
   `.sqlproj` build item, and strips the layout entry in lockstep; `FileEditCandidate.isDeleteFile`

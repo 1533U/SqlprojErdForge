@@ -12,6 +12,7 @@ import { runChangeColumnChecks } from "./p3/changeColumn.ts";
 import { runAddTableChecks } from "./p3/addTable.ts";
 import { runDropTableChecks } from "./p3/dropTable.ts";
 import { runRenameColumnChecks } from "./p3/renameColumn.ts";
+import { runRenameTableChecks } from "./p3/renameTable.ts";
 
 export function runVerifyP3(): void {
   const h = new VerifyHarness();
@@ -39,6 +40,9 @@ export function runVerifyP3(): void {
 
   console.log("\nDrop table:");
   runDropTableChecks(h, model);
+
+  console.log("\nRename table:");
+  runRenameTableChecks(h, model);
 
   h.exitWithSummary("ALL P3 CHECKS PASSED", "{n} P3 CHECK(S) FAILED");
 }

@@ -72,7 +72,7 @@ Order of operations:
 4. Change column type / nullability — **done** (`P3-4`).
 5. Add table (new file + layout entry) — **done** (`P3-5`).
 6. Drop table (delete file, warn on inbound FKs) — **done** (`P3-6`).
-7. Rename table (rename file, update FKs, migrate layout key) — **next** (`P3-7`).
+7. Rename table (rename file, update FKs, migrate layout key) — **done** (`P3-7`).
 
 Each ships with the diff-preview Apply/Discard flow (single-file today; multi-file via
 Refactor Preview in Phase 4).

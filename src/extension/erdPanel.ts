@@ -180,7 +180,8 @@ export class ErdPanel {
           | "renameColumn"
           | "changeColumn"
           | "addTable"
-          | "dropTable";
+          | "dropTable"
+          | "renameTable";
       }
     >,
   ): Promise<void> {

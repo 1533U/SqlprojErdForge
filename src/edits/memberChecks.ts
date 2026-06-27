@@ -143,6 +143,25 @@ export interface InboundFkReference {
   constraintName: string;
 }
 
+export function findInboundFkReferencesToTable(
+  model: ProjectModel,
+  tableKey: string,
+): InboundFkReference[] {
+  const [schema, tableName] = splitTableKey(tableKey);
+  const refs: InboundFkReference[] = [];
+
+  for (const [fromKey, fromTable] of model.tables) {
+    for (const member of fromTable.members) {
+      if (member.kind !== "constraint" || member.constraintType !== "foreignKey") continue;
+      const refSchema = member.references.schema ?? "dbo";
+      if (refSchema !== schema || member.references.table !== tableName) continue;
+      refs.push({ fromTableKey: fromKey, constraintName: member.name });
+    }
+  }
+
+  return refs;
+}
+
 export function findInboundFkReferences(
   model: ProjectModel,
   tableKey: string,

@@ -2,7 +2,7 @@
  * Pure edit-mode interaction rules shared by webview selection UX and row highlighting.
  */
 
-import { tableKeyFromParts, validateSchemaName, validateTableName } from "./memberChecks.ts";
+import { splitTableKey, tableKeyFromParts, validateSchemaName, validateTableName } from "./memberChecks.ts";
 
 export interface ColumnRef {
   tableKey: string;
@@ -17,7 +17,8 @@ export type EditMode =
   | "renameColumn"
   | "changeColumn"
   | "addTable"
-  | "dropTable";
+  | "dropTable"
+  | "renameTable";
 
 export interface GraphColumnView {
   name: string;
@@ -83,6 +84,47 @@ export function selectTableForDrop(
     return { ok: false, message: readOnlyTableMessage(tableKey, "table") };
   }
   return { ok: true, tableKey };
+}
+
+export function selectTableForRename(
+  table: GraphTableView | undefined,
+  tableKey: string,
+): { ok: true; tableKey: string; schema: string; tableName: string } | { ok: false; message: string } {
+  if (!table) {
+    return { ok: false, message: `Table not found: ${tableKey}.` };
+  }
+  if (table.readOnly) {
+    return { ok: false, message: readOnlyTableMessage(tableKey, "table") };
+  }
+  const [schema, tableName] = splitTableKey(tableKey);
+  return { ok: true, tableKey, schema, tableName };
+}
+
+export function validateRenameTableForm(
+  tables: GraphTableView[],
+  tableKey: string,
+  newSchema: string,
+  newTableName: string,
+): { ok: true } | { ok: false; message: string } {
+  const schemaResult = validateSchemaName(newSchema);
+  if (!schemaResult.ok) return schemaResult;
+
+  const tableResult = validateTableName(newTableName);
+  if (!tableResult.ok) return tableResult;
+
+  const [oldSchema, oldTableName] = splitTableKey(tableKey);
+  const trimmedSchema = newSchema.trim();
+  const trimmedName = newTableName.trim();
+  if (oldSchema === trimmedSchema && oldTableName === trimmedName) {
+    return { ok: false, message: "New table name must differ from the current name." };
+  }
+
+  const newKey = tableKeyFromParts(trimmedSchema, trimmedName);
+  if (tables.some((table) => table.key === newKey)) {
+    return { ok: false, message: `Table ${newKey} already exists.` };
+  }
+
+  return { ok: true };
 }
 
 export interface GraphEdgeView {

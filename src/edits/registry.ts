@@ -3,6 +3,7 @@
  */
 
 import type { ProjectModel } from "../model.ts";
+import { splitTableKey } from "./memberChecks.ts";
 import { prepareAddColumn } from "./addColumn.ts";
 import { prepareAddForeignKey } from "./addForeignKey.ts";
 import { prepareAddTable } from "./addTable.ts";
@@ -10,6 +11,7 @@ import { prepareRemoveColumn } from "./removeColumn.ts";
 import { prepareChangeColumn } from "./changeColumn.ts";
 import { prepareDropTable } from "./dropTable.ts";
 import { prepareRenameColumn } from "./renameColumn.ts";
+import { prepareRenameTable } from "./renameTable.ts";
 import type {
   AddColumnParams,
   AddForeignKeyParams,
@@ -19,6 +21,7 @@ import type {
   EditValidationResult,
   RemoveColumnParams,
   RenameColumnParams,
+  RenameTableParams,
 } from "./types.ts";
 
 export type EditOperationId =
@@ -28,7 +31,8 @@ export type EditOperationId =
   | "renameColumn"
   | "changeColumn"
   | "addTable"
-  | "dropTable";
+  | "dropTable"
+  | "renameTable";
 
 export type EditIntentMap = {
   addForeignKey: AddForeignKeyParams;
@@ -38,6 +42,7 @@ export type EditIntentMap = {
   changeColumn: ChangeColumnParams;
   addTable: AddTableParams;
   dropTable: DropTableParams;
+  renameTable: RenameTableParams;
 };
 
 export interface EditOperation<K extends EditOperationId = EditOperationId> {
@@ -85,6 +90,16 @@ export const editOperations: { [K in EditOperationId]: EditOperation<K> } = {
     id: "dropTable",
     prepare: prepareDropTable,
     previewTitle: (intent) => `Drop table ${intent.tableKey.trim()}`,
+  },
+  renameTable: {
+    id: "renameTable",
+    prepare: prepareRenameTable,
+    previewTitle: (intent) => {
+      const [schema] = splitTableKey(intent.tableKey.trim());
+      const newSchema = intent.newSchema?.trim() ?? schema;
+      const newName = intent.newTableName.trim();
+      return `Rename table ${intent.tableKey.trim()} → ${newSchema}.${newName}`;
+    },
   },
 };
 

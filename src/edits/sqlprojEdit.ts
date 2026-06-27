@@ -27,6 +27,37 @@ export function removeBuildInclude(sqlprojXml: string, include: string): string 
   return sqlprojXml.replace(lineRe, "");
 }
 
+export function replaceBuildInclude(
+  sqlprojXml: string,
+  oldInclude: string,
+  newInclude: string,
+): string {
+  if (oldInclude === newInclude) {
+    return sqlprojXml;
+  }
+  if (!buildIncludeExists(sqlprojXml, oldInclude)) {
+    return insertBuildInclude(sqlprojXml, newInclude);
+  }
+  const escaped = oldInclude.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const lineRe = new RegExp(
+    `(<Build\\b[^>]*\\bInclude\\s*=\\s*")${escaped}("\\s*/>)`,
+    "i",
+  );
+  return sqlprojXml.replace(lineRe, `$1${newInclude}$2`);
+}
+
+export function renameTableIncludePath(
+  currentInclude: string,
+  newSchema: string,
+  newTableName: string,
+): string {
+  const normalized = currentInclude.replace(/\\/g, "/");
+  const lastSlash = normalized.lastIndexOf("/");
+  const folder =
+    lastSlash === -1 ? "" : normalized.slice(0, lastSlash).replace(/\//g, "\\");
+  return tableIncludePath(folder, newSchema, newTableName);
+}
+
 export function insertBuildInclude(sqlprojXml: string, include: string): string {
   if (buildIncludeExists(sqlprojXml, include)) {
     return sqlprojXml;

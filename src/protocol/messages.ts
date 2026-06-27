@@ -11,6 +11,7 @@ import type {
   DropTableParams,
   RemoveColumnParams,
   RenameColumnParams,
+  RenameTableParams,
 } from "../edits/types.ts";
 
 export type AddForeignKeyIntent = AddForeignKeyParams;
@@ -20,6 +21,7 @@ export type RenameColumnIntent = RenameColumnParams;
 export type ChangeColumnIntent = ChangeColumnParams;
 export type AddTableIntent = AddTableParams;
 export type DropTableIntent = DropTableParams;
+export type RenameTableIntent = RenameTableParams;
 
 export type HostToWebviewMessage =
   | { type: "graph"; payload: GraphPayload }
@@ -36,7 +38,8 @@ export type WebviewToHostMessage =
   | { type: "renameColumn"; intent: RenameColumnIntent }
   | { type: "changeColumn"; intent: ChangeColumnIntent }
   | { type: "addTable"; intent: AddTableIntent }
-  | { type: "dropTable"; intent: DropTableIntent };
+  | { type: "dropTable"; intent: DropTableIntent }
+  | { type: "renameTable"; intent: RenameTableIntent };
 
 export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMessage {
   if (!value || typeof value !== "object") return false;
@@ -51,6 +54,7 @@ export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMe
     case "changeColumn":
     case "addTable":
     case "dropTable":
+    case "renameTable":
       return true;
     default:
       return false;

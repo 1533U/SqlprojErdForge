@@ -18,6 +18,7 @@ export type {
   HostToWebviewMessage,
   RemoveColumnIntent,
   RenameColumnIntent,
+  RenameTableIntent,
   WebviewToHostMessage,
 } from "../../src/protocol/messages";
 
@@ -64,6 +65,9 @@ export interface EditSessionState {
   addTableName: string;
   dropTableTarget: string | undefined;
   dropTableWarning: string | undefined;
+  renameTableTarget: string | undefined;
+  renameTableSchema: string;
+  renameTableNewName: string;
   message: string | undefined;
 }
 
@@ -83,6 +87,9 @@ export const initialEditSession = (): EditSessionState => ({
   addTableName: "",
   dropTableTarget: undefined,
   dropTableWarning: undefined,
+  renameTableTarget: undefined,
+  renameTableSchema: "dbo",
+  renameTableNewName: "",
   message: undefined,
 });
 
@@ -103,6 +110,9 @@ export function resetEditSelection(session: EditSessionState): EditSessionState 
     addTableName: "",
     dropTableTarget: undefined,
     dropTableWarning: undefined,
+    renameTableTarget: undefined,
+    renameTableSchema: "dbo",
+    renameTableNewName: "",
     message: undefined,
   };
 }

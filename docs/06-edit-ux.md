@@ -55,8 +55,8 @@ but it offers three ways to do "show before/after, then confirm," which we combi
 
 **Shipped (2026-06-27):** add foreign key; add / remove column; rename column (with inbound FK
 propagation); change column type / nullability; add table (new file + sqlproj + layout);
-drop table (delete file + sqlproj + layout, inbound-FK warning); single-file diff preview
-with Apply/Discard.
+drop table (delete file + sqlproj + layout, inbound-FK warning); rename table (file + sqlproj +
+layout key migration + inbound FK propagation); single-file diff preview with Apply/Discard.
 Multi-file rename uses sequential diff preview (`1/N`); full Refactor Preview panel deferred to Phase 4 (`P4-3`).
 
 Edits are added one well-defined operation at a time, each = *mutate model → emit affected
@@ -69,7 +69,7 @@ file(s) → preview → apply*:
 4. **Change column type / nullability** — **done** (`P3-4`).
 5. **Add table** (creates a new `schema.table.sql` file + a layout entry) — **done** (`P3-5`).
 6. **Drop table** (deletes the file; warn if other tables reference it) — **done** (`P3-6`).
-7. **Rename table** (rename file, update referencing FKs, migrate the layout key).
+7. **Rename table** (rename file, update referencing FKs, migrate the layout key) — **done** (`P3-7`).
 
 ## Edit invariants
 

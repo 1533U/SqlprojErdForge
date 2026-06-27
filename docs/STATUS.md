@@ -4,14 +4,13 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-27
-**Current phase:** Phase 3 in progress — next: rename table (`P3-7`)
-**Overall state:** Phase 0–2 complete. Phase 3: **Add FK** (`P3-1`), **Add/remove column**
-(`P3-2`), **Rename column** (`P3-3`), **Change column type/nullability** (`P3-4`),
-**Add table** (`P3-5`), **Drop table** (`P3-6`), **single-file diff preview + Apply/Discard**
-(`P3-8` partial), and the **edit-pipeline refactor** are landed and verified via
-`npm run verify:p3`. Remaining Phase 3 op: table rename (`P3-7`).
-Multi-file rename uses sequential diff preview (Apply advances 1/N); full Refactor Preview
-deferred to `P4-3`. Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
+**Current phase:** Phase 3 complete — next: Phase 4 guardrails (`P4-1`…)
+**Overall state:** Phase 0–2 complete. Phase 3: all eight edit ops shipped — **Add FK** (`P3-1`),
+**Add/remove column** (`P3-2`), **Rename column** (`P3-3`), **Change column type/nullability**
+(`P3-4`), **Add table** (`P3-5`), **Drop table** (`P3-6`), **Rename table** (`P3-7`), and
+**single-file diff preview + Apply/Discard** (`P3-8` partial), plus the **edit-pipeline refactor**.
+All verified via `npm run verify:p3`. Multi-file edits use sequential diff preview (`1/N`); full
+Refactor Preview deferred to `P4-3`. Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
 
 ## Done
 
@@ -118,16 +117,23 @@ deferred to `P4-3`. Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
   - Webview **Drop table** mode: table header pick → inbound-FK warning → sequential diff preview.
   - Registered as seventh op; `npm run verify:p3` extended. Plan:
     [`docs/09-p3-6-drop-table-plan.md`](09-p3-6-drop-table-plan.md).
+- **Phase 3 — rename table** (`P3-7`, 2026-06-27):
+  - [`src/edits/renameTable.ts`](../src/edits/renameTable.ts): rename `.sql` file
+    (`schema.table.sql`), update `.sqlproj` `<Build Include>` ([`replaceBuildInclude`](../src/edits/sqlprojEdit.ts)),
+    migrate layout key ([`migrateLayoutEntry`](../src/layout.ts)), and propagate inbound
+    `REFERENCES` across files.
+  - Webview **Rename table** mode: table header pick → schema + new name form → sequential diff
+    preview (delete old file → create new file → inbound FK updates → sqlproj → layout).
+  - Registered as eighth op; `npm run verify:p3` extended.
 
 ## In progress
 
-- _None._ Next session starts **P3-7** (rename table).
+- _None._ Next session starts **Phase 4** (`P4-1` canonical formatter, or `P0-15` formatting rules).
 
 ## Next up (immediate — start here next session)
 
-1. **P3-7** — rename table (file + FKs + layout key migration).
-2. Pin the **exact canonical formatting rules** (`P0-15`).
-3. Triage real-project coverage gaps (`P0-14`).
+1. **P4-1** — canonical formatter + CI format check (or pin formatting rules first: `P0-15`).
+2. Triage real-project coverage gaps (`P0-14`).
 
 > Tip: `npm run spike`, `npm run verify:p1`, `npm run verify:p3`, `npm run typecheck`,
 > `npm run compile`, then F5.

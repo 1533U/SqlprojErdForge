@@ -17,7 +17,8 @@ type EditMessage = Extract<
       | "renameColumn"
       | "changeColumn"
       | "addTable"
-      | "dropTable";
+      | "dropTable"
+      | "renameTable";
   }
 >;
 
@@ -29,6 +30,7 @@ const EDIT_MESSAGE_TYPES: EditMessage["type"][] = [
   "changeColumn",
   "addTable",
   "dropTable",
+  "renameTable",
 ];
 
 export function isEditMessage(message: WebviewToHostMessage): message is EditMessage {
@@ -74,6 +76,11 @@ export function prepareEditFromMessage(
       return {
         result: prepareEdit("dropTable", model, message.intent),
         title: editPreviewTitle("dropTable", message.intent),
+      };
+    case "renameTable":
+      return {
+        result: prepareEdit("renameTable", model, message.intent),
+        title: editPreviewTitle("renameTable", message.intent),
       };
     default: {
       const _exhaustive: never = message;

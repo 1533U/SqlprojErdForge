@@ -12,9 +12,11 @@ export function EditBanner({
   onConfirmChangeColumn,
   onConfirmAddTable,
   onConfirmDropTable,
+  onConfirmRenameTable,
   onRenameNewNameChange,
   onChangeColumnDraftChange,
   onAddTableChange,
+  onRenameTableChange,
   onCancel,
 }: {
   edit: EditSessionState;
@@ -26,9 +28,11 @@ export function EditBanner({
   onConfirmChangeColumn: () => void;
   onConfirmAddTable: () => void;
   onConfirmDropTable: () => void;
+  onConfirmRenameTable: () => void;
   onRenameNewNameChange: (name: string) => void;
   onChangeColumnDraftChange: (patch: Partial<EditSessionState["changeColumnDraft"]>) => void;
   onAddTableChange: (patch: Partial<Pick<EditSessionState, "addTableSchema" | "addTableName">>) => void;
+  onRenameTableChange: (patch: Partial<Pick<EditSessionState, "renameTableSchema" | "renameTableNewName">>) => void;
   onCancel: () => void;
 }) {
   if (edit.mode === "none") return null;
@@ -235,6 +239,39 @@ export function EditBanner({
         confirmLabel = "Preview drop";
         onConfirm = onConfirmDropTable;
         confirmEnabled = true;
+      }
+      break;
+    case "renameTable":
+      if (edit.renameTableTarget == null) {
+        body = <span>Click a table header to choose which table to rename.</span>;
+      } else {
+        body = (
+          <span className="erdforge-edit-banner__form">
+            Rename <strong>{edit.renameTableTarget}</strong>
+            <label>
+              Schema
+              <input
+                type="text"
+                value={edit.renameTableSchema}
+                onChange={(event) => onRenameTableChange({ renameTableSchema: event.target.value })}
+                placeholder="dbo"
+              />
+            </label>
+            <label>
+              New table name
+              <input
+                type="text"
+                value={edit.renameTableNewName}
+                onChange={(event) => onRenameTableChange({ renameTableNewName: event.target.value })}
+                placeholder="pr_new_table_name"
+              />
+            </label>
+          </span>
+        );
+        confirmLabel = "Preview rename";
+        onConfirm = onConfirmRenameTable;
+        confirmEnabled =
+          edit.renameTableSchema.trim().length > 0 && edit.renameTableNewName.trim().length > 0;
       }
       break;
     default: {

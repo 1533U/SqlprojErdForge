@@ -68,3 +68,25 @@ export function removeLayoutEntry(layout: LayoutFile, tableKey: string): LayoutF
   const { [tableKey]: _removed, ...tables } = layout.tables;
   return { version: 1, tables };
 }
+
+export function migrateLayoutEntry(
+  layout: LayoutFile,
+  oldTableKey: string,
+  newTableKey: string,
+): LayoutFile {
+  if (oldTableKey === newTableKey) {
+    return layout;
+  }
+  const existing = layout.tables[oldTableKey];
+  const { [oldTableKey]: _removed, ...rest } = layout.tables;
+  if (!existing) {
+    return { version: 1, tables: rest };
+  }
+  return {
+    version: 1,
+    tables: {
+      ...rest,
+      [newTableKey]: existing,
+    },
+  };
+}

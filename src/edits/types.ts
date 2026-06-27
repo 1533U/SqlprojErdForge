@@ -51,6 +51,13 @@ export interface DropTableParams {
   tableKey: string;
 }
 
+export interface RenameTableParams {
+  tableKey: string;
+  newTableName: string;
+  /** When omitted, the table keeps its current schema. */
+  newSchema?: string;
+}
+
 export interface FileEditCandidate {
   /** Absolute path to the on-disk .sql file. */
   absPath: string;
