@@ -25,7 +25,8 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 | P0-5 | CLI/test harness: parse → emit → parse | done | `src/cli.ts` (`npm run spike`) |
 | P0-6 | Idempotency tests incl. all 4 comment slots + footer fallback | done | fixed point green on full corpus |
 | P0-7 | Diagnostics for unsupported constructs | done | loud diagnostics; no crashes |
-| P0-14 | Triage real-project coverage gaps (proc/view files, post-`GO` objects, extra modifiers) | todo | from P0-13; informs allowlist + discovery file-role detection |
+| P0-14 | Triage real-project coverage gaps (proc/view files, post-`GO` objects, extra modifiers) | done | triage doc `10-p0-14-coverage-triage.md`; P0-14a shipped |
+| P0-14b | Column-modifier allowlist triage + top-N parser fixes | todo | ~591 warnings on real project; see triage doc |
 | P0-15 | Pin exact canonical formatting rules (indent/alignment/casing/bracketing) | done | C4.1–C4.8 in `03-sql-conventions.md`; ADR-0013 |
 
 ## Phase 1 — Read-only live ERD
@@ -67,8 +68,8 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
 | P0-15 | Pin exact canonical formatting rules (indent/alignment/casing/bracketing) | done | C4.1–C4.8; ADR-0013 |
-| P4-1 | Canonical formatter + CI format check | todo | enforce C4/C5; match `src/emitter.ts` |
-| P4-2 | DACPAC build in CI (correctness backstop) | todo | |
+| P4-1 | Canonical formatter + CI format check | done | `src/formatCheck.ts`; `npm run format:check` + `verify:format`; CI on changed `.sql` |
+| P4-2 | DACPAC build in CI (correctness backstop) | done | CI `dacpac` job; `verify:dacpac`; fixture SDK; CI-only per ADR-0002 |
 | P4-3 | Refactor Preview for multi-file edits | todo | atomic apply; addresses P3-8 partial gaps |
 | P4-4 | Conflict handling on concurrent file changes | todo | |
 | P4-5 | Edit comment text on the diagram | todo | |

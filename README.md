@@ -40,7 +40,7 @@ reliable round-tripping, and clean review diffs achievable. See
 | Diagram UI | Webview hosting React + React Flow + ELK auto-layout |
 | Live updates | `FileSystemWatcher` → re-parse → patch model |
 | Layout persistence | Committed JSON sidecar (`.erdforge/layout.json`) |
-| Correctness backstop | DACPAC build in CI (optional gate, not a runtime dep) |
+| Correctness backstop | DACPAC build in **CI only** (optional; extension needs no dotnet) |
 
 See [`docs/02-architecture.md`](docs/02-architecture.md) for the full picture and
 [`docs/decisions/`](docs/decisions/) for the rationale behind each choice.
@@ -63,15 +63,16 @@ See [`docs/02-architecture.md`](docs/02-architecture.md) for the full picture an
 | [`docs/05-data-model.md`](docs/05-data-model.md) | In-memory model types + layout sidecar format |
 | [`docs/06-edit-ux.md`](docs/06-edit-ux.md) | How ERD edits are previewed and applied |
 | [`docs/07-roadmap.md`](docs/07-roadmap.md) | Phased plan, milestones, the de-risking spike |
+| [`docs/10-p0-14-coverage-triage.md`](docs/10-p0-14-coverage-triage.md) | Real-project diagnostic triage (P0-14) |
 | [`docs/decisions/`](docs/decisions/) | Architecture Decision Records (ADRs) |
 
 ## Status
 
-**Phase 3 complete** — all eight bidirectional edit ops landed and verified via
-`npm run verify:p3`. Phase 2 column comments and Phase 1 read-only ERD remain verified
-(`npm run verify:p1`). Phase 0 spike remains green. **Next:** **`P4-1`** canonical formatter
-+ CI (format rules pinned in C4 / [ADR-0013](docs/decisions/ADR-0013-canonical-format-rules.md)).
-See [`docs/STATUS.md`](docs/STATUS.md).
+**Phase 4 guardrails shipped** — format check (`P4-1`), file-role discovery (`P0-14a`), DACPAC
+CI on fixtures (`P4-2`, CI-only — **the VS Code extension needs no dotnet or extra tools**).
+Phase 3 edit ops and earlier phases remain verified. **Next:** **`P4-3`** atomic multi-file
+preview/apply. See [`docs/STATUS.md`](docs/STATUS.md) and
+[`docs/10-p0-14-coverage-triage.md`](docs/10-p0-14-coverage-triage.md).
 
 ## Quick start
 
@@ -84,7 +85,11 @@ npm install
 npm run spike        # fixture corpus: idempotency, comments, C9, C10 — must pass
 npm run spike:real   # read-only discovery smoke test on the real ~760-file project
 npm run verify:p1    # Phase 1 exit criteria: graph, layout, refresh timing, scale
-npm run verify:p3    # Phase 3 edit ops: add FK, add/remove column (headless)
+npm run verify:p3    # Phase 3 edit ops (headless)
+npm run verify:p014  # file-role detection (P0-14a)
+npm run verify:format # P4-1 format-check machinery tests
+npm run format:check # P4-1 conformance on changed .sql (or --files …)
+npm run verify:dacpac # P4-2 fixture DACPAC (optional; skips without dotnet)
 npm run typecheck
 ```
 
@@ -95,6 +100,8 @@ npm install
 npm run compile      # bundles extension host + webview
 npm run verify:p1    # headless ERD checks
 npm run verify:p3    # headless edit-op checks
+npm run verify:format
+npm run format:check
 npm run typecheck
 ```
 

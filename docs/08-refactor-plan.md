@@ -31,11 +31,12 @@ Each slice is ≤1 session; run the listed verify commands before merging.
 | 8 | Decompose `graph.ts` → `diagram/` | done | spike, verify:p1 |
 | 9 | Edit operation registry | done | verify:p3 |
 
-**Full gate:** `npm run typecheck && npm run compile && npm run spike && npm run verify:p1 && npm run verify:p3`
+**Full gate:** `npm run typecheck && npm run compile && npm run spike && npm run verify:p1 && npm run verify:p3 && npm run verify:p014 && npm run verify:format`
 
 ## Next (post-refactor / Phase 4)
 
-- **P4-1** — canonical formatter + CI format check (rules pinned: [`03-sql-conventions.md`](03-sql-conventions.md) C4, [ADR-0013](decisions/ADR-0013-canonical-format-rules.md)).
+- **P4-1** — done: `src/formatCheck.ts` + `npm run format:check` / CI on changed `.sql` only.
+- **P0-14a / P4-2** — done: file-role filter + DACPAC CI (extension still standalone).
 - **P4-3** — Refactor Preview for atomic multi-file apply (closes `P3-8` partial gaps).
 - Parser decomposition (`src/core/parse/`) when `P0-14` allowlist work starts.
 

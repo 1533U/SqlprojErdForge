@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run typecheck
+      - run: npm run compile
+      - run: npm run spike
+      - run: npm run verify:p1
+      - run: npm run verify:p3
+      - run: npm run verify:format
+      - run: npm run verify:p014
+
+      - name: Canonical format check (changed .sql only)
+        env:
+          FORMAT_CHECK_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: npm run format:check
+
+  dacpac:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build fixture DACPAC (P4-2)
+        run: dotnet build test/fixtures/SampleErd.sqlproj -v minimal

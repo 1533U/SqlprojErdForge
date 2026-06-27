@@ -4,12 +4,12 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-27
-**Current phase:** Phase 4 started — canonical format rules pinned (`P0-15`); next: `P4-1`
-**Overall state:** Phase 0–2 complete. **Phase 3 complete:** all eight edit ops shipped and
-verified via `npm run verify:p3`. Single-file diff preview + Apply/Discard is production-ready;
-multi-file edits use sequential diff preview (`1/N`) — partial completion and non-atomic
-rename-on-disk are known gaps tracked for `P4-3`. Two Phase 0 follow-ups remain open
-(`P0-14`, `P0-15`).
+**Current phase:** Phase 4 — guardrails (`P4-1`, `P4-2`, `P0-14a` done); next: **`P4-3`**
+**Overall state:** Phase 0–2 complete. **Phase 3 complete.** **Phase 4 guardrails:** format
+conformance (`P4-1`), file-role discovery filter (`P0-14a`), DACPAC CI backstop on fixtures
+(`P4-2` — CI-only, extension stays pure TypeScript per ADR-0002). Multi-file edits still
+sequential (`P3-8` partial → `P4-3`). Optional follow-up: column-modifier allowlist triage
+(`P0-14b`).
 
 ## Done
 
@@ -50,9 +50,9 @@ rename-on-disk are known gaps tracked for `P4-3`. Two Phase 0 follow-ups remain 
   - Parse diagnostics in Problems panel ([`src/extension/diagnostics.ts`](../src/extension/diagnostics.ts)).
   - Extension host entry is `out/extension.cjs` (CommonJS) because root `package.json` uses
     `"type": "module"` for the Node spike CLI.
-- **Phase 1 exit criteria verified** (`npm run verify:p1`, 2026-06-25):
+- **Phase 1 exit criteria verified** (`npm run verify:p1`, 2026-06-25, updated 2026-06-27):
   - Real project ERD: 96 tables, 105 in-project FK edges (20 dangling omitted), ELK layout
-    for all tables in ~750 ms; 606 diagnostics (9 errors from proc temp tables, 597 warnings).
+    for all tables in ~750 ms; **597 diagnostics, 0 errors** (after P0-14a file-role filter).
   - Live refresh: re-parse + graph rebuild on fixture edit in ~160 ms (+ 500 ms debounce).
   - Drag-to-persist: layout sidecar write/read roundtrip; saved positions survive refresh.
 - **Phase 2 column comments** (`P2-1`, `P2-2`, 2026-06-27):
@@ -132,18 +132,37 @@ rename-on-disk are known gaps tracked for `P4-3`. Two Phase 0 follow-ups remain 
     trailing commas, uppercase keywords, unbracketed simple identifiers, no alignment).
   - [ADR-0013](decisions/ADR-0013-canonical-format-rules.md): emitter is reference implementation;
     `P4-1` formatter must match byte-for-byte.
+- **Phase 4 — canonical format check** (`P4-1`, 2026-06-27):
+  - Conformance gate: on-disk `.sql` must equal `emit(parse(src))` byte-for-byte
+    ([`src/formatCheck.ts`](../src/formatCheck.ts)).
+  - Headless machinery tests: `npm run verify:format`; changed-file gate: `npm run format:check`
+    (scoped per [ADR-0010](decisions/ADR-0010-formatting-strategy-lazy-canonicalization.md)).
+  - GitHub Actions workflow [`.github/workflows/ci.yml`](../.github/workflows/ci.yml): typecheck,
+    compile, spike, verify:p1/p3/format/p014, format:check on changed `.sql` only.
+- **Phase 0 / 4 — real-project coverage triage** (`P0-14`, 2026-06-27):
+  - Triage doc [`10-p0-14-coverage-triage.md`](10-p0-14-coverage-triage.md): 9 proc-file false
+    errors eliminated; 597 warnings remain (591 unsupported column modifiers).
+  - **P0-14a:** file-role detection in [`src/sqlFileRole.ts`](../src/sqlFileRole.ts) — skip
+    proc/view/function `.sql` before table parse; `npm run verify:p014`.
+  - Fixture: [`test/fixtures/edge/dbo.SampleProc.sql`](../test/fixtures/edge/dbo.SampleProc.sql).
+- **Phase 4 — DACPAC CI backstop** (`P4-2`, 2026-06-27):
+  - Separate GitHub Actions `dacpac` job: `dotnet build test/fixtures/SampleErd.sqlproj`.
+  - `npm run verify:dacpac` (skips locally when dotnet absent). **Not a runtime dependency**
+    — VS Code extension remains standalone ([ADR-0002](decisions/ADR-0002-pure-typescript-parser.md)).
+  - Fixture sqlproj uses `Microsoft.Build.Sql` SDK.
 
 ## In progress
 
-- _None._ Next session: **`P4-1`** — canonical formatter + CI format check (conformance to C4 / emitter).
+- _None._ Next session: **`P4-3`** — Refactor Preview / atomic multi-file apply.
 
 ## Next up (immediate — start here next session)
 
-1. **P4-1** — canonical formatter + CI format check on changed files (enforce C4/C5 per ADR-0013).
-2. Triage real-project coverage gaps (`P0-14`) — can run in parallel.
+1. **P4-3** — Refactor Preview / atomic multi-file apply (closes `P3-8` partial gaps).
+2. **P0-14b** (optional) — column-modifier allowlist triage on real project (~591 warnings).
+3. **P4-6** (optional polish) — group crowded webview edit toolbar.
 
-> Tip: `npm run spike`, `npm run verify:p1`, `npm run verify:p3`, `npm run typecheck`,
-> `npm run compile`, then F5.
+> Tip: `npm run spike`, `npm run verify:p1`, `npm run verify:p3`, `npm run verify:p014`,
+> `npm run verify:format`, `npm run format:check`, `npm run typecheck`, `npm run compile`, then F5.
 > In the Extension Development Host, **File → Open Folder** to the repo before **Open ERD**.
 
 ## Blocked / needs input
@@ -201,12 +220,10 @@ rename-on-disk are known gaps tracked for `P4-3`. Two Phase 0 follow-ups remain 
 ## Real-project coverage gaps from the P0-13 smoke test (triage as P0-14)
 
 - 760 build items → 96 tables parsed, 664 skipped: most skips are proc/view/function `.sql`
-  files (no `CREATE TABLE`), correctly ignored.
-- 9 "expected table name" errors come from stored-proc files that create `#temp` tables —
-  not table files (C2); discovery should distinguish file roles rather than scan for any
-  `CREATE TABLE`.
-- ~597 warnings are dominated by post-`GO` content (indexes, extended properties) and a few
-  extra column modifiers — inputs for finalizing the allowlist.
+  files (no top-level `CREATE TABLE`), correctly ignored via file-role detection (`P0-14a`).
+- ~~9 "expected table name" errors~~ — **fixed** (proc `#temp` tables no longer parsed as table files).
+- ~597 warnings: **591** unsupported column modifiers + **6** post-`GO` content (ADR-0012).
+  See [`10-p0-14-coverage-triage.md`](10-p0-14-coverage-triage.md); optional allowlist work → `P0-14b`.
 
 ## Pointers
 

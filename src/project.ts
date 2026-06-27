@@ -10,6 +10,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join, sep } from "node:path";
 import type { ProjectModel, Table, Diagnostic } from "./model.ts";
 import { parseTable } from "./parser.ts";
+import { isTableSqlFile } from "./sqlFileRole.ts";
 
 export interface BuildItem {
   /** The raw Include path as written in the .sqlproj (may use backslashes). */
@@ -89,6 +90,10 @@ export function buildProjectModel(projectPath: string): BuildResult {
         severity: "error",
         message: `Build item not found on disk: ${item.absPath}`,
       });
+      continue;
+    }
+    if (!isTableSqlFile(src)) {
+      skipped.push(item); // proc/view/function or no live CREATE TABLE (C2 / C9).
       continue;
     }
     const result = parseTable(src, item.include);

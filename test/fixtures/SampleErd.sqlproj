@@ -7,7 +7,7 @@
   - Includes a non-table build item and a <None> item to test filtering.
   Paths are relative to this .sqlproj file.
 -->
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.Build.Sql/0.2.5">
   <PropertyGroup>
     <Name>SampleErd</Name>
     <DSP>Microsoft.Data.Tools.Schema.Sql.Sql130DatabaseSchemaProvider</DSP>
@@ -35,6 +35,7 @@
     <!-- Edge cases -->
     <Build Include="edge\dbo.TierMatrix.sql" />
     <Build Include="edge\dbo.PorMasterHdr+.sql" />
+    <Build Include="edge\dbo.SampleProc.sql" />
     <!-- All four comment slots + the rule-5 footer fallback (docs/04 worked example) -->
     <Build Include="comments\dbo.CommentSlots.sql" />
     <!-- Filtering distractors: a non-table build item and a non-build item.

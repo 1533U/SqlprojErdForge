@@ -55,6 +55,11 @@ export function runFixtures(): void {
   console.log(
     `  parsed tables: ${model.tables.size}; skipped (non-table / commented-out): ${skipped.length}`,
   );
+  h.check(
+    "stored-proc fixture skipped without diagnostic",
+    skipped.some((s) => /SampleProc/i.test(s.include)) &&
+      !model.diagnostics.some((d) => /SampleProc/i.test(d.file)),
+  );
   console.log(`  diagnostics: ${model.diagnostics.length}`);
   for (const d of model.diagnostics) {
     console.log(`    - ${d.severity} ${d.file}:${d.line} ${d.message}`);

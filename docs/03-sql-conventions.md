@@ -56,8 +56,7 @@ files are rewritten; CI format checks are scoped to changed files until a bulk m
 
 The subsections below are the **pinned canonical format** (settled `P0-15`, 2026-06-27;
 [ADR-0013](decisions/ADR-0013-canonical-format-rules.md)). The reference implementation is
-[`src/emitter.ts`](../src/emitter.ts); `P4-1` must match it byte-for-byte on the supported
-subset.
+[`src/emitter.ts`](../src/emitter.ts); [`src/formatCheck.ts`](../src/formatCheck.ts) (`npm run format:check`) enforces byte-for-byte match on changed files.
 
 ### C4.1 — File-level
 

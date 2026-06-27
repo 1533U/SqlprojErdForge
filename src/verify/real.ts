@@ -2,9 +2,12 @@
  * Real-project discovery smoke test (P0-13, read-only).
  */
 
+import { readFileSync } from "node:fs";
 import { buildEdges } from "../erd.ts";
 import { buildProjectModel, discover } from "../project.ts";
+import { classifySqlFileRole } from "../sqlFileRole.ts";
 import { REAL_PROJECT } from "./paths.ts";
+import { summarizeWarnings } from "./p014.ts";
 
 export function runReal(): void {
   console.log("SqlprojErdForge — Phase 0 discovery smoke test (P0-13, read-only)\n");
@@ -40,5 +43,16 @@ export function runReal(): void {
       console.log(`    ${String(count).padStart(4)}  ${msg}`);
     }
   }
+
+  const warnByMsg = summarizeWarnings(warnings);
+  if (warnByMsg.length) {
+    console.log("\n  Top warning categories:");
+    for (const [msg, count] of warnByMsg) {
+      console.log(`    ${String(count).padStart(4)}  ${msg}`);
+    }
+  }
+
+  const procPaths = sqlItems.filter((b) => classifySqlFileRole(readFileSync(b.absPath, "utf8")) === "non_table");
+  console.log(`\n  non-table sql build items (procs/views/…): ${procPaths.length}`);
   console.log("\n  Smoke test complete (no files were modified).");
 }

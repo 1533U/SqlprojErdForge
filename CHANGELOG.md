@@ -8,6 +8,17 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 ## [Unreleased]
 
 ### Added
+- **P0-14 / P0-14a — real-project coverage triage + file-role detection:** triage doc
+  `docs/10-p0-14-coverage-triage.md`; `src/sqlFileRole.ts` skips proc/view/function `.sql`
+  before table parse (eliminates 9 false errors on real project); `npm run verify:p014`;
+  fixture `dbo.SampleProc.sql`.
+- **P4-2 — DACPAC CI backstop:** separate GitHub Actions `dacpac` job builds
+  `test/fixtures/SampleErd.sqlproj` via `Microsoft.Build.Sql`; `npm run verify:dacpac`
+  (optional local, skips without dotnet). Extension remains standalone — no runtime .NET
+  ([ADR-0002](docs/decisions/ADR-0002-pure-typescript-parser.md)).
+- **P4-1 — canonical format check:** `src/formatCheck.ts` conformance gate (`parse → emit` equals
+  on-disk); `npm run format:check` (changed `.sql` only per ADR-0010) and `npm run verify:format`
+  (headless machinery tests); GitHub Actions CI workflow (`.github/workflows/ci.yml`).
 - **P0-15 — canonical format rules:** C4.1–C4.8 in `docs/03-sql-conventions.md`; [ADR-0013](docs/decisions/ADR-0013-canonical-format-rules.md) pins emitter output as the spec for `P4-1`.
 
 ### Changed
