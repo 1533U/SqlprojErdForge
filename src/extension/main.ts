@@ -3,9 +3,14 @@
  */
 
 import * as vscode from "vscode";
+import { DiffPreviewController } from "./diffPreview.ts";
 import { ErdPanel } from "./erdPanel.ts";
 
+let diffPreview: DiffPreviewController | undefined;
+
 export function activate(context: vscode.ExtensionContext): void {
+  diffPreview = new DiffPreviewController(context);
+
   const openErd = vscode.commands.registerCommand(
     "erdforge.openErd",
     (resource: vscode.Uri | undefined) => {
@@ -16,7 +21,8 @@ export function activate(context: vscode.ExtensionContext): void {
         );
         return;
       }
-      ErdPanel.open(uri.fsPath, context.extensionUri);
+      if (!diffPreview) return;
+      ErdPanel.open(uri.fsPath, context.extensionUri, diffPreview);
     },
   );
 

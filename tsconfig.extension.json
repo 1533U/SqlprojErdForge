@@ -6,6 +6,6 @@
     "types": ["node", "vscode"],
     "allowImportingTsExtensions": true
   },
-  "include": ["src/extension/**/*.ts"],
+  "include": ["src/extension/**/*.ts", "src/edits/**/*.ts"],
   "exclude": []
 }

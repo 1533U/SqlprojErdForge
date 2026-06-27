@@ -18,6 +18,18 @@
         "command": "erdforge.openErd",
         "title": "Open ERD",
         "category": "ErdForge"
+      },
+      {
+        "command": "erdforge.applyEdit",
+        "title": "Apply",
+        "icon": "$(check)",
+        "category": "ErdForge"
+      },
+      {
+        "command": "erdforge.discardEdit",
+        "title": "Discard",
+        "icon": "$(close)",
+        "category": "ErdForge"
       }
     ],
     "menus": {
@@ -32,6 +44,26 @@
         {
           "command": "erdforge.openErd",
           "when": "resourceExtname == .sqlproj || editorLangId == xml"
+        },
+        {
+          "command": "erdforge.applyEdit",
+          "when": "erdforge.pendingEdit"
+        },
+        {
+          "command": "erdforge.discardEdit",
+          "when": "erdforge.pendingEdit"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "erdforge.applyEdit",
+          "when": "erdforge.pendingEdit && isInDiffEditor",
+          "group": "navigation@1"
+        },
+        {
+          "command": "erdforge.discardEdit",
+          "when": "erdforge.pendingEdit && isInDiffEditor",
+          "group": "navigation@2"
         }
       ]
     }
@@ -40,6 +72,7 @@
     "spike": "node src/cli.ts",
     "spike:real": "node src/cli.ts --real",
     "verify:p1": "node src/cli.ts --verify-p1",
+    "verify:p3": "node src/cli.ts --verify-p3",
     "compile": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.extension.json && tsc --noEmit -p tsconfig.webview.json",

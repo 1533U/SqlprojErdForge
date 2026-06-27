@@ -15,6 +15,7 @@ const elk = new ElkConstructor();
 
 const NODE_WIDTH = 280;
 const ROW_HEIGHT = 22;
+const DESCRIPTION_ROW_HEIGHT = 18;
 const HEADER_HEIGHT = 36;
 const PADDING = 12;
 
@@ -24,6 +25,8 @@ export interface GraphColumn {
   nullable: boolean;
   isPrimaryKey: boolean;
   isForeignKey: boolean;
+  /** Member trailing comment (`-- …` on the column line); shown on the ERD when enabled. */
+  description?: string;
 }
 
 export interface GraphTable {
@@ -49,7 +52,13 @@ export interface GraphPayload {
 }
 
 function estimateNodeHeight(table: GraphTable): number {
-  return HEADER_HEIGHT + table.columns.length * ROW_HEIGHT + PADDING;
+  const descriptionRows = table.columns.filter((c) => c.description).length;
+  return (
+    HEADER_HEIGHT +
+    table.columns.length * ROW_HEIGHT +
+    descriptionRows * DESCRIPTION_ROW_HEIGHT +
+    PADDING
+  );
 }
 
 function tableToGraph(table: Table): GraphTable {
@@ -82,6 +91,7 @@ function tableToGraph(table: Table): GraphTable {
       nullable: member.nullable,
       isPrimaryKey: pkColumns.has(member.name),
       isForeignKey: fkColumns.has(member.name),
+      ...(member.trailingComment ? { description: member.trailingComment } : {}),
     });
   }
 

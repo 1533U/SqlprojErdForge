@@ -97,6 +97,7 @@ export function buildProjectModel(projectPath: string): BuildResult {
       skipped.push(item); // C9: commented-out or non-table file.
       continue;
     }
+    result.table.sourceFile = item.include;
     result.table.readOnly = isReadOnlyInclude(item.include);
     tables.set(`${result.table.schema}.${result.table.name}`, result.table);
   }

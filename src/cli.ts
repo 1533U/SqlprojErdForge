@@ -26,6 +26,7 @@ import { buildProjectModel, discover } from "./project.ts";
 import { buildEdges } from "./erd.ts";
 import { applyLayoutUpdate, buildGraphPayload } from "./graph.ts";
 import { readLayout, writeLayout } from "./layout.ts";
+import { applyAddForeignKeyToModel, prepareAddForeignKey, suggestForeignKeyName } from "./edits/addForeignKey.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..");
@@ -241,6 +242,22 @@ async function runVerifyP1(): Promise<void> {
     fixturePayload.tables.every((t) => fixtureLayout.tables[t.key] != null),
   );
 
+  const customerTable = fixturePayload.tables.find((t) => t.key === "dbo.Customer");
+  const idCol = customerTable?.columns.find((c) => c.name === "Id");
+  const nameCol = customerTable?.columns.find((c) => c.name === "Name");
+  const emailCol = customerTable?.columns.find((c) => c.name === "Email");
+  check("Customer Id trailing comment on graph", idCol?.description === "surrogate key", idCol?.description);
+  check(
+    "Customer Email trailing comment on graph",
+    emailCol?.description === "nullable until verified",
+    emailCol?.description,
+  );
+  check(
+    "Customer Name has no trailing comment (leading-only deferred)",
+    nameCol?.description === undefined,
+    nameCol?.description,
+  );
+
   const layoutBackup = JSON.stringify(fixtureLayout);
   const testLayout = applyLayoutUpdate(fixtureLayout, "dbo.pr_supplier", 4242, 2424);
   writeLayout(SAMPLE_PROJECT, testLayout);
@@ -314,6 +331,64 @@ async function runVerifyP1(): Promise<void> {
   process.exit(failures === 0 ? 0 : 1);
 }
 
+function runVerifyP3(): void {
+  console.log("SqlprojErdForge — Phase 3 add-FK verification (headless)\n");
+
+  const { model } = buildProjectModel(SAMPLE_PROJECT);
+  const params = {
+    fromTableKey: "dbo.pr_buying_season",
+    fromColumn: "last_modified_user_id",
+    toTableKey: "dbo.pr_port",
+    toColumn: "port_id",
+    constraintName: "FK_test_erdforge_buying_season_port",
+  };
+
+  check(
+    "suggested FK name",
+    suggestForeignKeyName(params.fromTableKey, params.toTableKey) === "FK_pr_buying_season_pr_port",
+  );
+
+  const prepared = prepareAddForeignKey(model, params);
+  check("add FK candidate builds", prepared.ok === true);
+  if (prepared.ok) {
+    check(
+      "candidate emits named FOREIGN KEY",
+      prepared.candidate.candidateContent.includes(
+        `CONSTRAINT ${params.constraintName} FOREIGN KEY (last_modified_user_id) REFERENCES dbo.pr_port (port_id)`,
+      ),
+    );
+    check(
+      "candidate differs from on-disk source",
+      prepared.candidate.candidateContent !== prepared.candidate.originalContent,
+    );
+  }
+
+  const duplicate = prepareAddForeignKey(applyAddForeignKeyToModel(model, params), params);
+  check("duplicate FK rejected", duplicate.ok === false, duplicate.ok ? undefined : duplicate.message);
+
+  const readOnly = prepareAddForeignKey(model, {
+    fromTableKey: "dbo.InvBuyer",
+    fromColumn: "Buyer",
+    toTableKey: "dbo.pr_port",
+    toColumn: "port_id",
+    constraintName: "FK_test_readonly",
+  });
+  check("read-only source rejected", readOnly.ok === false, readOnly.ok ? undefined : readOnly.message);
+
+  const missingColumn = prepareAddForeignKey(model, {
+    ...params,
+    fromColumn: "not_a_column",
+  });
+  check(
+    "missing source column rejected",
+    missingColumn.ok === false,
+    missingColumn.ok ? undefined : missingColumn.message,
+  );
+
+  console.log(`\n${failures === 0 ? "ALL P3 CHECKS PASSED" : `${failures} P3 CHECK(S) FAILED`}`);
+  process.exit(failures === 0 ? 0 : 1);
+}
+
 function indent(text: string): string {
   return text
     .split("\n")
@@ -324,6 +399,8 @@ function indent(text: string): string {
 const args = process.argv.slice(2);
 if (args.includes("--verify-p1")) {
   void runVerifyP1();
+} else if (args.includes("--verify-p3")) {
+  runVerifyP3();
 } else if (args.includes("--real")) {
   runReal();
 } else {

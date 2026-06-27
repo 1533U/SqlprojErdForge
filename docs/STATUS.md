@@ -3,12 +3,12 @@
 > The single place to learn "where are we?". Keep this current. See the update routine in
 > [`../AGENTS.md`](../AGENTS.md).
 
-**Last updated:** 2026-06-25
-**Current phase:** Phase 1 complete — read-only live ERD verified (fixtures + real project)
-**Overall state:** Phase 0 complete; Phase 1 exit criteria verified headlessly (`npm run verify:p1`)
-and on fixtures via F5. Real project (96 tables, 105 in-project FK edges) builds in ~750 ms;
-live refresh pipeline under 1 s (+ 500 ms debounce). Two Phase 0 follow-ups remain open
-(`P0-14`, `P0-15`).
+**Last updated:** 2026-06-27
+**Current phase:** Phase 3 in progress — add foreign key + diff preview (first edit op)
+**Overall state:** Phase 0–2 complete. Phase 3 slice landed: **Add FK** from the webview
+(two-click column connect → diff preview → Apply/Discard), backed by `src/edits/` and
+`npm run verify:p3`. Remaining Phase 3 ops (add/remove column, rename, etc.) not started.
+Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
 
 ## Done
 
@@ -54,18 +54,31 @@ live refresh pipeline under 1 s (+ 500 ms debounce). Two Phase 0 follow-ups rema
     for all tables in ~750 ms; 606 diagnostics (9 errors from proc temp tables, 597 warnings).
   - Live refresh: re-parse + graph rebuild on fixture edit in ~160 ms (+ 500 ms debounce).
   - Drag-to-persist: layout sidecar write/read roundtrip; saved positions survive refresh.
+- **Phase 2 column comments** (`P2-1`, `P2-2`, 2026-06-27):
+  - `trailingComment` flows through `GraphColumn.description` ([`src/graph.ts`](../src/graph.ts))
+    and renders as an annotation row on table nodes ([`webview/src/TableNode.tsx`](../webview/src/TableNode.tsx)).
+  - Header toggle **Show column descriptions** (default on) in the webview
+    ([`webview/src/App.tsx`](../webview/src/App.tsx)).
+  - `leadingComments` not rendered in v1 — only inline trailing comments (see open decisions).
+- **Phase 3 — add foreign key** (`P3-1`, `P3-8` partial, 2026-06-27):
+  - Edit layer [`src/edits/`](../src/edits/): clone model, validate, emit candidate SQL.
+  - Webview **Add FK** mode: pick source column → pick target PK → **Preview FK**.
+  - Diff editor + **Apply** / **Discard** title actions ([`src/extension/diffPreview.ts`](../src/extension/diffPreview.ts)).
+  - Headless checks: `npm run verify:p3`. Tables now store full `.sqlproj` include paths for
+    file resolution ([`src/project.ts`](../src/project.ts)).
 
 ## In progress
 
-- _Nothing actively in progress._
+- **Phase 3** — remaining edit ops (`P3-2`…`P3-7`); multi-file Refactor Preview deferred.
 
 ## Next up (immediate — start here next session)
 
-1. **Phase 2** — column comments on the diagram (`P2-1`, `P2-2`).
+1. **P3-2** — add / remove column.
 2. Pin the **exact canonical formatting rules** (`P0-15`).
 3. Triage real-project coverage gaps (`P0-14`).
 
-> Tip: `npm run spike`, `npm run verify:p1`, `npm run typecheck`, `npm run compile`, then F5.
+> Tip: `npm run spike`, `npm run verify:p1`, `npm run verify:p3`, `npm run typecheck`,
+> `npm run compile`, then F5.
 > In the Extension Development Host, **File → Open Folder** to the repo before **Open ERD**.
 
 ## Blocked / needs input
@@ -105,7 +118,8 @@ live refresh pipeline under 1 s (+ 500 ms debounce). Two Phase 0 follow-ups rema
 
 - Exact canonical formatting rules (indent width, alignment, keyword casing, identifier
   bracketing policy) — flows from D1; spike uses a simple deterministic style for now.
-- Whether `leadingComments` render on the diagram or only `trailingComment`.
+- **`leadingComments` on the diagram** — deferred in Phase 2 v1; only `trailingComment`
+  renders today. Revisit when table header/footer descriptions ship.
 - Whether the layout sidecar is committed for every repo by default.
 - Default classification rule for read-only mirror tables (glob vs explicit list).
 

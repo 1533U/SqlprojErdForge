@@ -3,6 +3,7 @@
  */
 
 import * as vscode from "vscode";
+import { isRefreshSuppressed } from "./diffPreview.ts";
 
 export interface DebouncedWatcher {
   dispose(): void;
@@ -19,9 +20,11 @@ export function watchSqlFiles(
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const schedule = (): void => {
+    if (isRefreshSuppressed()) return;
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = undefined;
+      if (isRefreshSuppressed()) return;
       onChange();
     }, debounceMs);
   };

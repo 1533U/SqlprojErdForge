@@ -8,6 +8,12 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 ## [Unreleased]
 
 ### Added
+- **Phase 3 — add foreign key** (`P3-1`): webview **Add FK** mode (source column → target PK),
+  edit layer in `src/edits/`, diff preview with **Apply** / **Discard** editor actions, conflict
+  check on stale apply. `npm run verify:p3` for headless validation.
+- **Phase 2 column comments** (`P2-1`, `P2-2`): member `trailingComment` is serialized as
+  `GraphColumn.description` and shown as an annotation row on table nodes; webview header
+  toggle **Show column descriptions** (default on). `leadingComments` not rendered in v1.
 - **`npm run verify:p1`** — headless Phase 1 exit-criteria checks: fixture + real-project graph
   build with ELK layout, layout sidecar roundtrip, live-refresh timing, and scale thresholds.
 - **Phase 1 read-only ERD** (`P1-1`…`P1-6`): VS Code extension with **Open ERD** command on

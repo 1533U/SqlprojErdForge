@@ -10,7 +10,9 @@ import { readLayout, writeLayout } from "../layout.ts";
 import type { LayoutFile } from "../layout.ts";
 import type { ProjectModel } from "../model.ts";
 import { buildProjectModel } from "../project.ts";
+import { prepareAddForeignKey, suggestForeignKeyName } from "../edits/addForeignKey.ts";
 import { ErdDiagnostics } from "./diagnostics.ts";
+import { type DiffPreviewController } from "./diffPreview.ts";
 import { isWebviewToHostMessage, type HostToWebviewMessage } from "./messages.ts";
 import { watchSqlFiles } from "./watcher.ts";
 
@@ -25,6 +27,7 @@ export class ErdPanel {
   private layout: LayoutFile;
   private model: ProjectModel | undefined;
   private readonly diagnostics: ErdDiagnostics;
+  private readonly diffPreview: DiffPreviewController;
   private readonly watcher: ReturnType<typeof watchSqlFiles>;
   private readonly disposables: vscode.Disposable[] = [];
   private webviewReady = false;
@@ -34,11 +37,13 @@ export class ErdPanel {
     panel: vscode.WebviewPanel,
     projectPath: string,
     extensionUri: vscode.Uri,
+    diffPreview: DiffPreviewController,
   ) {
     this.panel = panel;
     this.projectPath = projectPath;
     this.projectDir = vscode.Uri.file(dirname(projectPath));
     this.extensionUri = extensionUri;
+    this.diffPreview = diffPreview;
     this.layout = readLayout(projectPath);
     this.diagnostics = new ErdDiagnostics();
     this.watcher = watchSqlFiles(this.projectDir, () => {
@@ -58,10 +63,20 @@ export class ErdPanel {
       this.disposables,
     );
 
+    this.disposables.push(
+      diffPreview.onApplied(() => {
+        void this.refresh();
+      }),
+    );
+
     void this.refresh();
   }
 
-  static open(projectPath: string, extensionUri: vscode.Uri): ErdPanel {
+  static open(
+    projectPath: string,
+    extensionUri: vscode.Uri,
+    diffPreview: DiffPreviewController,
+  ): ErdPanel {
     const existing = ErdPanel.panels.get(projectPath);
     if (existing) {
       existing.panel.reveal(vscode.ViewColumn.One);
@@ -76,7 +91,7 @@ export class ErdPanel {
       { enableScripts: true, retainContextWhenHidden: true },
     );
 
-    const erdPanel = new ErdPanel(panel, projectPath, extensionUri);
+    const erdPanel = new ErdPanel(panel, projectPath, extensionUri, diffPreview);
     ErdPanel.panels.set(projectPath, erdPanel);
     return erdPanel;
   }
@@ -145,9 +160,46 @@ export class ErdPanel {
         );
         writeLayout(this.projectPath, this.layout);
         break;
+      case "addForeignKey":
+        void this.handleAddForeignKey(message.intent);
+        break;
       default:
         break;
     }
+  }
+
+  private async handleAddForeignKey(
+    intent: {
+      fromTableKey: string;
+      fromColumn: string;
+      toTableKey: string;
+      toColumn: string;
+      constraintName: string;
+    },
+  ): Promise<void> {
+    if (!this.model) {
+      this.postMessage({ type: "editResult", ok: false, message: "Model not loaded yet." });
+      return;
+    }
+
+    const constraintName =
+      intent.constraintName.trim() ||
+      suggestForeignKeyName(intent.fromTableKey, intent.toTableKey);
+
+    const result = prepareAddForeignKey(this.model, {
+      ...intent,
+      constraintName,
+    });
+
+    if (!result.ok) {
+      this.postMessage({ type: "editResult", ok: false, message: result.message });
+      void vscode.window.showWarningMessage(`ErdForge: ${result.message}`);
+      return;
+    }
+
+    const title = `Add FK ${intent.fromTableKey}.${intent.fromColumn} → ${intent.toTableKey}.${intent.toColumn}`;
+    await this.diffPreview.show(result.candidate, title);
+    this.postMessage({ type: "editResult", ok: true });
   }
 
   private getHtml(webview: vscode.Webview): string {
