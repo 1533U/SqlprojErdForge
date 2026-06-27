@@ -12,6 +12,19 @@ export interface AddForeignKeyParams {
   constraintName: string;
 }
 
+export interface AddColumnParams {
+  tableKey: string;
+  columnName: string;
+  dataType: string;
+  nullable: boolean;
+  trailingComment?: string;
+}
+
+export interface RemoveColumnParams {
+  tableKey: string;
+  columnName: string;
+}
+
 export interface FileEditCandidate {
   /** Absolute path to the on-disk .sql file. */
   absPath: string;

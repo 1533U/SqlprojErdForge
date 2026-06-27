@@ -15,12 +15,17 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TableNode, type TableNodeData } from "./TableNode";
 import type {
-  ColumnRef,
+  EditMode,
+  EditSessionState,
   GraphPayload,
   HostToWebviewMessage,
   WebviewToHostMessage,
 } from "./types";
-import { suggestForeignKeyName } from "./types";
+import {
+  initialEditSession,
+  resetEditSelection,
+  suggestForeignKeyName,
+} from "./types";
 
 declare function acquireVsCodeApi(): {
   postMessage(message: WebviewToHostMessage): void;
@@ -49,9 +54,9 @@ const defaultEdgeOptions = {
 function payloadToFlow(
   payload: GraphPayload,
   showDescriptions: boolean,
-  fkMode: boolean,
-  fkSource: ColumnRef | undefined,
+  edit: EditSessionState,
   onColumnSelect: (tableKey: string, columnName: string) => void,
+  onTableSelect: (tableKey: string) => void,
 ): { nodes: Node<TableNodeData>[]; edges: Edge[] } {
   const nodes: Node<TableNodeData>[] = payload.tables.map((table) => {
     const pos = payload.layout.tables[table.key];
@@ -66,9 +71,12 @@ function payloadToFlow(
         readOnly: table.readOnly,
         columns: table.columns,
         showDescriptions,
-        fkMode,
-        fkSource,
+        editMode: edit.mode,
+        fkSource: edit.fkSource,
+        addColumnTableKey: edit.addColumnTableKey,
+        removeColumnTarget: edit.removeColumnTarget,
         onColumnSelect,
+        onTableSelect,
       },
     };
   });
@@ -97,39 +105,182 @@ function FitViewOnLoad({ tableCount, edgeCount }: { tableCount: number; edgeCoun
   return null;
 }
 
+function EditBanner({
+  edit,
+  onNewColumnChange,
+  onConfirmFk,
+  onConfirmAddColumn,
+  onConfirmRemoveColumn,
+  onCancel,
+}: {
+  edit: EditSessionState;
+  onNewColumnChange: (patch: Partial<EditSessionState["newColumn"]>) => void;
+  onConfirmFk: () => void;
+  onConfirmAddColumn: () => void;
+  onConfirmRemoveColumn: () => void;
+  onCancel: () => void;
+}) {
+  if (edit.mode === "none") return null;
+
+  const constraintName =
+    edit.fkSource && edit.fkTarget
+      ? suggestForeignKeyName(edit.fkSource.tableKey, edit.fkTarget.tableKey)
+      : undefined;
+
+  let body: React.ReactNode;
+  let confirmLabel: string | undefined;
+  let onConfirm: (() => void) | undefined;
+  let confirmEnabled = false;
+
+  switch (edit.mode) {
+    case "addFk":
+      if (edit.fkSource == null) {
+        body = <span>Click a column on the table that will hold the foreign key.</span>;
+      } else if (edit.fkTarget == null) {
+        body = (
+          <span>
+            Source: <strong>{edit.fkSource.tableKey}.{edit.fkSource.columnName}</strong> — now click a
+            primary-key column on the referenced table.
+          </span>
+        );
+      } else {
+        body = (
+          <span>
+            {edit.fkSource.tableKey}.{edit.fkSource.columnName} → {edit.fkTarget.tableKey}.{edit.fkTarget.columnName}
+            {constraintName ? ` (${constraintName})` : null}
+          </span>
+        );
+        confirmLabel = "Preview FK";
+        onConfirm = onConfirmFk;
+        confirmEnabled = true;
+      }
+      break;
+    case "addColumn":
+      if (edit.addColumnTableKey == null) {
+        body = <span>Click a table header to choose where to add a column.</span>;
+      } else {
+        body = (
+          <span className="erdforge-edit-banner__form">
+            <strong>{edit.addColumnTableKey}</strong>
+            <label>
+              Name
+              <input
+                type="text"
+                value={edit.newColumn.name}
+                onChange={(event) => onNewColumnChange({ name: event.target.value })}
+                placeholder="column_name"
+              />
+            </label>
+            <label>
+              Type
+              <input
+                type="text"
+                value={edit.newColumn.dataType}
+                onChange={(event) => onNewColumnChange({ dataType: event.target.value })}
+                placeholder="INT"
+              />
+            </label>
+            <label className="erdforge-edit-banner__checkbox">
+              <input
+                type="checkbox"
+                checked={edit.newColumn.nullable}
+                onChange={(event) => onNewColumnChange({ nullable: event.target.checked })}
+              />
+              Nullable
+            </label>
+            <label>
+              Description
+              <input
+                type="text"
+                value={edit.newColumn.description}
+                onChange={(event) => onNewColumnChange({ description: event.target.value })}
+                placeholder="optional trailing comment"
+              />
+            </label>
+          </span>
+        );
+        confirmLabel = "Preview column";
+        onConfirm = onConfirmAddColumn;
+        confirmEnabled =
+          edit.newColumn.name.trim().length > 0 && edit.newColumn.dataType.trim().length > 0;
+      }
+      break;
+    case "removeColumn":
+      if (edit.removeColumnTarget == null) {
+        body = (
+          <span>
+            Click a column to remove (PK and FK columns cannot be removed).
+          </span>
+        );
+      } else {
+        body = (
+          <span>
+            Remove <strong>{edit.removeColumnTarget.tableKey}.{edit.removeColumnTarget.columnName}</strong>?
+          </span>
+        );
+        confirmLabel = "Preview remove";
+        onConfirm = onConfirmRemoveColumn;
+        confirmEnabled = true;
+      }
+      break;
+    default:
+      body = null;
+      break;
+  }
+
+  return (
+    <div className="erdforge-edit-banner">
+      {body}
+      {edit.message ? <span className="erdforge-edit-banner__error">{edit.message}</span> : null}
+      <span className="erdforge-edit-banner__actions">
+        {confirmEnabled && onConfirm && confirmLabel ? (
+          <button type="button" className="erdforge-btn" onClick={onConfirm}>
+            {confirmLabel}
+          </button>
+        ) : null}
+        <button type="button" className="erdforge-btn erdforge-btn--ghost" onClick={onCancel}>
+          Cancel
+        </button>
+      </span>
+    </div>
+  );
+}
+
 function ErdCanvas({
   payload,
   showDescriptions,
-  fkMode,
-  fkSource,
-  fkTarget,
-  editMessage,
+  edit,
+  onNewColumnChange,
   onColumnSelect,
-  onCancelFk,
+  onTableSelect,
   onConfirmFk,
+  onConfirmAddColumn,
+  onConfirmRemoveColumn,
+  onCancelEdit,
 }: {
   payload: GraphPayload;
   showDescriptions: boolean;
-  fkMode: boolean;
-  fkSource: ColumnRef | undefined;
-  fkTarget: ColumnRef | undefined;
-  editMessage: string | undefined;
+  edit: EditSessionState;
+  onNewColumnChange: (patch: Partial<EditSessionState["newColumn"]>) => void;
   onColumnSelect: (tableKey: string, columnName: string) => void;
-  onCancelFk: () => void;
+  onTableSelect: (tableKey: string) => void;
   onConfirmFk: () => void;
+  onConfirmAddColumn: () => void;
+  onConfirmRemoveColumn: () => void;
+  onCancelEdit: () => void;
 }) {
   const initial = useMemo(
-    () => payloadToFlow(payload, showDescriptions, fkMode, fkSource, onColumnSelect),
-    [payload, showDescriptions, fkMode, fkSource, onColumnSelect],
+    () => payloadToFlow(payload, showDescriptions, edit, onColumnSelect, onTableSelect),
+    [payload, showDescriptions, edit, onColumnSelect, onTableSelect],
   );
   const [nodes, setNodes] = useState(initial.nodes);
   const [edges, setEdges] = useState(initial.edges);
 
   useEffect(() => {
-    const next = payloadToFlow(payload, showDescriptions, fkMode, fkSource, onColumnSelect);
+    const next = payloadToFlow(payload, showDescriptions, edit, onColumnSelect, onTableSelect);
     setNodes(next.nodes);
     setEdges(next.edges);
-  }, [payload, showDescriptions, fkMode, fkSource, onColumnSelect]);
+  }, [payload, showDescriptions, edit, onColumnSelect, onTableSelect]);
 
   const onNodesChange = useCallback((changes: NodeChange<Node<TableNodeData>>[]) => {
     setNodes((current) => applyNodeChanges(changes, current));
@@ -149,41 +300,16 @@ function ErdCanvas({
     setEdges((current) => applyEdgeChanges(changes, current));
   }, []);
 
-  const constraintName =
-    fkSource && fkTarget
-      ? suggestForeignKeyName(fkSource.tableKey, fkTarget.tableKey)
-      : undefined;
-
   return (
     <>
-      {fkMode ? (
-        <div className="erdforge-fk-banner">
-          {fkSource == null ? (
-            <span>Click a column on the table that will hold the foreign key.</span>
-          ) : fkTarget == null ? (
-            <span>
-              Source: <strong>{fkSource.tableKey}.{fkSource.columnName}</strong> — now click a
-              primary-key column on the referenced table.
-            </span>
-          ) : (
-            <span>
-              {fkSource.tableKey}.{fkSource.columnName} → {fkTarget.tableKey}.{fkTarget.columnName}
-              {constraintName ? ` (${constraintName})` : null}
-            </span>
-          )}
-          {editMessage ? <span className="erdforge-fk-banner__error">{editMessage}</span> : null}
-          <span className="erdforge-fk-banner__actions">
-            {fkSource && fkTarget ? (
-              <button type="button" className="erdforge-btn" onClick={onConfirmFk}>
-                Preview FK
-              </button>
-            ) : null}
-            <button type="button" className="erdforge-btn erdforge-btn--ghost" onClick={onCancelFk}>
-              Cancel
-            </button>
-          </span>
-        </div>
-      ) : null}
+      <EditBanner
+        edit={edit}
+        onNewColumnChange={onNewColumnChange}
+        onConfirmFk={onConfirmFk}
+        onConfirmAddColumn={onConfirmAddColumn}
+        onConfirmRemoveColumn={onConfirmRemoveColumn}
+        onCancel={onCancelEdit}
+      />
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -210,70 +336,160 @@ export function App() {
   const [payload, setPayload] = useState<GraphPayload | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [showDescriptions, setShowDescriptions] = useState(true);
-  const [fkMode, setFkMode] = useState(false);
-  const [fkSource, setFkSource] = useState<ColumnRef | undefined>();
-  const [fkTarget, setFkTarget] = useState<ColumnRef | undefined>();
-  const [editMessage, setEditMessage] = useState<string | undefined>();
+  const [edit, setEdit] = useState<EditSessionState>(initialEditSession);
 
-  const resetFkSelection = useCallback(() => {
-    setFkSource(undefined);
-    setFkTarget(undefined);
-    setEditMessage(undefined);
+  const cancelEditMode = useCallback(() => {
+    setEdit(initialEditSession());
   }, []);
 
-  const cancelFkMode = useCallback(() => {
-    setFkMode(false);
-    resetFkSelection();
-  }, [resetFkSelection]);
+  const startEditMode = useCallback((mode: EditMode) => {
+    setEdit((current) => {
+      if (current.mode === mode) {
+        return initialEditSession();
+      }
+      return { ...resetEditSelection(current), mode };
+    });
+  }, []);
+
+  const onNewColumnChange = useCallback((patch: Partial<EditSessionState["newColumn"]>) => {
+    setEdit((current) => ({
+      ...current,
+      message: undefined,
+      newColumn: { ...current.newColumn, ...patch },
+    }));
+  }, []);
+
+  const onTableSelect = useCallback(
+    (tableKey: string) => {
+      setEdit((current) => {
+        if (current.mode !== "addColumn") return current;
+
+        const table = payload?.tables.find((t) => t.key === tableKey);
+        if (!table) return { ...current, message: undefined };
+        if (table.readOnly) {
+          return {
+            ...current,
+            message: `${tableKey} is read-only — choose an editable table.`,
+          };
+        }
+
+        return { ...current, message: undefined, addColumnTableKey: tableKey };
+      });
+    },
+    [payload],
+  );
 
   const onColumnSelect = useCallback(
     (tableKey: string, columnName: string) => {
-      if (!fkMode) return;
-      setEditMessage(undefined);
+      setEdit((current) => {
+        const table = payload?.tables.find((t) => t.key === tableKey);
+        const column = table?.columns.find((c) => c.name === columnName);
+        if (!table || !column) return { ...current, message: undefined };
 
-      const table = payload?.tables.find((t) => t.key === tableKey);
-      const column = table?.columns.find((c) => c.name === columnName);
-      if (!table || !column) return;
+        if (current.mode === "addFk") {
+          if (current.fkSource == null) {
+            if (table.readOnly) {
+              return {
+                ...current,
+                message: `${tableKey} is read-only — choose a column on an editable table.`,
+              };
+            }
+            return {
+              ...current,
+              message: undefined,
+              fkSource: { tableKey, columnName },
+            };
+          }
 
-      if (fkSource == null) {
-        if (table.readOnly) {
-          setEditMessage(`${tableKey} is read-only — choose a column on an editable table.`);
-          return;
+          if (tableKey === current.fkSource.tableKey) {
+            return {
+              ...current,
+              message: undefined,
+              fkSource: { tableKey, columnName },
+              fkTarget: undefined,
+            };
+          }
+
+          if (!column.isPrimaryKey) {
+            return { ...current, message: "Referenced column must be a primary key." };
+          }
+
+          return {
+            ...current,
+            message: undefined,
+            fkTarget: { tableKey, columnName },
+          };
         }
-        setFkSource({ tableKey, columnName });
-        return;
-      }
 
-      if (tableKey === fkSource.tableKey) {
-        setFkSource({ tableKey, columnName });
-        setFkTarget(undefined);
-        return;
-      }
+        if (current.mode === "removeColumn") {
+          if (table.readOnly) {
+            return { ...current, message: `${tableKey} is read-only.` };
+          }
+          if (column.isPrimaryKey || column.isForeignKey) {
+            return { ...current, message: "Cannot remove a PK or FK column." };
+          }
+          return {
+            ...current,
+            message: undefined,
+            removeColumnTarget: { tableKey, columnName },
+          };
+        }
 
-      if (!column.isPrimaryKey) {
-        setEditMessage("Referenced column must be a primary key.");
-        return;
-      }
-
-      setFkTarget({ tableKey, columnName });
+        return { ...current, message: undefined };
+      });
     },
-    [fkMode, fkSource, payload],
+    [payload],
   );
 
   const onConfirmFk = useCallback(() => {
-    if (!fkSource || !fkTarget) return;
-    setEditMessage(undefined);
-    vscode.postMessage({
-      type: "addForeignKey",
-      intent: {
-        fromTableKey: fkSource.tableKey,
-        fromColumn: fkSource.columnName,
-        toTableKey: fkTarget.tableKey,
-        toColumn: fkTarget.columnName,
-        constraintName: suggestForeignKeyName(fkSource.tableKey, fkTarget.tableKey),
-      },
+    setEdit((current) => {
+      if (!current.fkSource || !current.fkTarget) return current;
+      vscode.postMessage({
+        type: "addForeignKey",
+        intent: {
+          fromTableKey: current.fkSource.tableKey,
+          fromColumn: current.fkSource.columnName,
+          toTableKey: current.fkTarget.tableKey,
+          toColumn: current.fkTarget.columnName,
+          constraintName: suggestForeignKeyName(current.fkSource.tableKey, current.fkTarget.tableKey),
+        },
+      });
+      return { ...current, message: undefined };
     });
-  }, [fkSource, fkTarget]);
+  }, []);
+
+  const onConfirmAddColumn = useCallback(() => {
+    setEdit((current) => {
+      if (!current.addColumnTableKey) return current;
+      vscode.postMessage({
+        type: "addColumn",
+        intent: {
+          tableKey: current.addColumnTableKey,
+          columnName: current.newColumn.name.trim(),
+          dataType: current.newColumn.dataType.trim(),
+          nullable: current.newColumn.nullable,
+          ...(current.newColumn.description.trim()
+            ? { trailingComment: current.newColumn.description.trim() }
+            : {}),
+        },
+      });
+      return { ...current, message: undefined };
+    });
+  }, []);
+
+  const onConfirmRemoveColumn = useCallback(() => {
+    setEdit((current) => {
+      if (!current.removeColumnTarget) return current;
+      vscode.postMessage({
+        type: "removeColumn",
+        intent: {
+          tableKey: current.removeColumnTarget.tableKey,
+          columnName: current.removeColumnTarget.columnName,
+        },
+      });
+      return { ...current, message: undefined };
+    });
+  }, []);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<HostToWebviewMessage>): void => {
@@ -288,9 +504,9 @@ export function App() {
           break;
         case "editResult":
           if (message.ok) {
-            cancelFkMode();
+            cancelEditMode();
           } else {
-            setEditMessage(message.message);
+            setEdit((current) => ({ ...current, message: message.message }));
           }
           break;
         default:
@@ -301,7 +517,7 @@ export function App() {
     window.addEventListener("message", onMessage);
     vscode.postMessage({ type: "ready" });
     return () => window.removeEventListener("message", onMessage);
-  }, [cancelFkMode]);
+  }, [cancelEditMode]);
 
   if (error) {
     return (
@@ -337,17 +553,24 @@ export function App() {
         </label>
         <button
           type="button"
-          className={`erdforge-btn${fkMode ? " erdforge-btn--active" : ""}`}
-          onClick={() => {
-            if (fkMode) {
-              cancelFkMode();
-            } else {
-              setFkMode(true);
-              resetFkSelection();
-            }
-          }}
+          className={`erdforge-btn${edit.mode === "addFk" ? " erdforge-btn--active" : ""}`}
+          onClick={() => startEditMode("addFk")}
         >
-          {fkMode ? "Adding FK…" : "Add FK"}
+          {edit.mode === "addFk" ? "Adding FK…" : "Add FK"}
+        </button>
+        <button
+          type="button"
+          className={`erdforge-btn${edit.mode === "addColumn" ? " erdforge-btn--active" : ""}`}
+          onClick={() => startEditMode("addColumn")}
+        >
+          {edit.mode === "addColumn" ? "Adding column…" : "Add column"}
+        </button>
+        <button
+          type="button"
+          className={`erdforge-btn${edit.mode === "removeColumn" ? " erdforge-btn--active" : ""}`}
+          onClick={() => startEditMode("removeColumn")}
+        >
+          {edit.mode === "removeColumn" ? "Removing column…" : "Remove column"}
         </button>
       </header>
       <div className="erdforge-canvas">
@@ -355,13 +578,14 @@ export function App() {
           <ErdCanvas
             payload={payload}
             showDescriptions={showDescriptions}
-            fkMode={fkMode}
-            fkSource={fkSource}
-            fkTarget={fkTarget}
-            editMessage={editMessage}
+            edit={edit}
+            onNewColumnChange={onNewColumnChange}
             onColumnSelect={onColumnSelect}
-            onCancelFk={cancelFkMode}
+            onTableSelect={onTableSelect}
             onConfirmFk={onConfirmFk}
+            onConfirmAddColumn={onConfirmAddColumn}
+            onConfirmRemoveColumn={onConfirmRemoveColumn}
+            onCancelEdit={cancelEditMode}
           />
         </ReactFlowProvider>
       </div>

@@ -10,7 +10,10 @@ import { readLayout, writeLayout } from "../layout.ts";
 import type { LayoutFile } from "../layout.ts";
 import type { ProjectModel } from "../model.ts";
 import { buildProjectModel } from "../project.ts";
+import { prepareAddColumn } from "../edits/addColumn.ts";
 import { prepareAddForeignKey, suggestForeignKeyName } from "../edits/addForeignKey.ts";
+import { prepareRemoveColumn } from "../edits/removeColumn.ts";
+import type { EditValidationResult } from "../edits/types.ts";
 import { ErdDiagnostics } from "./diagnostics.ts";
 import { type DiffPreviewController } from "./diffPreview.ts";
 import { isWebviewToHostMessage, type HostToWebviewMessage } from "./messages.ts";
@@ -160,44 +163,54 @@ export class ErdPanel {
         );
         writeLayout(this.projectPath, this.layout);
         break;
-      case "addForeignKey":
-        void this.handleAddForeignKey(message.intent);
+      case "addForeignKey": {
+        const intent = message.intent;
+        const constraintName =
+          intent.constraintName.trim() ||
+          suggestForeignKeyName(intent.fromTableKey, intent.toTableKey);
+        void this.handlePrepareEdit(
+          (model) => prepareAddForeignKey(model, { ...intent, constraintName }),
+          `Add FK ${intent.fromTableKey}.${intent.fromColumn} → ${intent.toTableKey}.${intent.toColumn}`,
+        );
         break;
+      }
+      case "addColumn": {
+        const intent = message.intent;
+        void this.handlePrepareEdit(
+          (model) => prepareAddColumn(model, intent),
+          `Add column ${intent.tableKey}.${intent.columnName}`,
+        );
+        break;
+      }
+      case "removeColumn": {
+        const intent = message.intent;
+        void this.handlePrepareEdit(
+          (model) => prepareRemoveColumn(model, intent),
+          `Remove column ${intent.tableKey}.${intent.columnName}`,
+        );
+        break;
+      }
       default:
         break;
     }
   }
 
-  private async handleAddForeignKey(
-    intent: {
-      fromTableKey: string;
-      fromColumn: string;
-      toTableKey: string;
-      toColumn: string;
-      constraintName: string;
-    },
+  private async handlePrepareEdit(
+    prepare: (model: ProjectModel) => EditValidationResult,
+    title: string,
   ): Promise<void> {
     if (!this.model) {
       this.postMessage({ type: "editResult", ok: false, message: "Model not loaded yet." });
       return;
     }
 
-    const constraintName =
-      intent.constraintName.trim() ||
-      suggestForeignKeyName(intent.fromTableKey, intent.toTableKey);
-
-    const result = prepareAddForeignKey(this.model, {
-      ...intent,
-      constraintName,
-    });
-
+    const result = prepare(this.model);
     if (!result.ok) {
       this.postMessage({ type: "editResult", ok: false, message: result.message });
       void vscode.window.showWarningMessage(`ErdForge: ${result.message}`);
       return;
     }
 
-    const title = `Add FK ${intent.fromTableKey}.${intent.fromColumn} → ${intent.toTableKey}.${intent.toColumn}`;
     await this.diffPreview.show(result.candidate, title);
     this.postMessage({ type: "editResult", ok: true });
   }

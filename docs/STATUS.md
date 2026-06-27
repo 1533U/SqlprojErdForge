@@ -4,11 +4,11 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-27
-**Current phase:** Phase 3 in progress — add foreign key + diff preview (first edit op)
-**Overall state:** Phase 0–2 complete. Phase 3 slice landed: **Add FK** from the webview
-(two-click column connect → diff preview → Apply/Discard), backed by `src/edits/` and
-`npm run verify:p3`. Remaining Phase 3 ops (add/remove column, rename, etc.) not started.
-Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
+**Current phase:** Phase 3 in progress — add/remove column landed (P3-2)
+**Overall state:** Phase 0–2 complete. Phase 3: **Add FK** (`P3-1`), **Add/remove column** (`P3-2`),
+and single-file diff preview (`P3-8` partial) are done, backed by `src/edits/` and
+`npm run verify:p3`. Remaining Phase 3 ops (rename, type change, table add/drop/rename) not
+started. Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
 
 ## Done
 
@@ -66,14 +66,21 @@ Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
   - Diff editor + **Apply** / **Discard** title actions ([`src/extension/diffPreview.ts`](../src/extension/diffPreview.ts)).
   - Headless checks: `npm run verify:p3`. Tables now store full `.sqlproj` include paths for
     file resolution ([`src/project.ts`](../src/project.ts)).
+- **Phase 3 — add / remove column** (`P3-2`, 2026-06-27):
+  - [`src/edits/addColumn.ts`](../src/edits/addColumn.ts) and
+    [`src/edits/removeColumn.ts`](../src/edits/removeColumn.ts): insert before constraints (C5),
+    PK/FK/inbound-FK guardrails on remove.
+  - Webview **Add column** (table header → form → preview) and **Remove column** (column pick →
+    preview) modes in [`webview/src/App.tsx`](../webview/src/App.tsx).
+  - `npm run verify:p3` extended with add/remove column headless checks.
 
 ## In progress
 
-- **Phase 3** — remaining edit ops (`P3-2`…`P3-7`); multi-file Refactor Preview deferred.
+- **Phase 3** — remaining edit ops (`P3-3`…`P3-7`); multi-file Refactor Preview deferred.
 
 ## Next up (immediate — start here next session)
 
-1. **P3-2** — add / remove column.
+1. **P3-3** — rename column (multi-file FK updates).
 2. Pin the **exact canonical formatting rules** (`P0-15`).
 3. Triage real-project coverage gaps (`P0-14`).
 

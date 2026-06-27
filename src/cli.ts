@@ -19,14 +19,18 @@ import { performance } from "node:perf_hooks";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import type { Table, Column, Member } from "./model.ts";
+import type { Table, Member } from "./model.ts";
 import { parseTable } from "./parser.ts";
 import { emitTable } from "./emitter.ts";
 import { buildProjectModel, discover } from "./project.ts";
 import { buildEdges } from "./erd.ts";
 import { applyLayoutUpdate, buildGraphPayload } from "./graph.ts";
 import { readLayout, writeLayout } from "./layout.ts";
+import { applyAddColumnToModel, prepareAddColumn } from "./edits/addColumn.ts";
 import { applyAddForeignKeyToModel, prepareAddForeignKey, suggestForeignKeyName } from "./edits/addForeignKey.ts";
+import { applyRemoveColumnToModel, prepareRemoveColumn } from "./edits/removeColumn.ts";
+import { findColumn } from "./edits/memberChecks.ts";
+import type { EditValidationResult } from "./edits/types.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..");
@@ -42,10 +46,13 @@ function check(label: string, ok: boolean, detail?: string): void {
   console.log(`  [${mark}] ${label}${detail && !ok ? ` — ${detail}` : ""}`);
 }
 
-function findColumn(table: Table, name: string): Column | undefined {
-  return table.members.find(
-    (m): m is Column => m.kind === "column" && m.name === name,
-  );
+function checkPrepareOk(label: string, result: EditValidationResult): result is Extract<EditValidationResult, { ok: true }> {
+  check(label, result.ok === true);
+  return result.ok === true;
+}
+
+function checkPrepareRejected(label: string, result: EditValidationResult): void {
+  check(label, result.ok === false, result.ok ? undefined : result.message);
 }
 
 function memberNames(table: Table): string[] {
@@ -332,9 +339,24 @@ async function runVerifyP1(): Promise<void> {
 }
 
 function runVerifyP3(): void {
-  console.log("SqlprojErdForge — Phase 3 add-FK verification (headless)\n");
+  console.log("SqlprojErdForge — Phase 3 edit verification (headless)\n");
 
   const { model } = buildProjectModel(SAMPLE_PROJECT);
+
+  console.log("Add foreign key:");
+  runAddFkChecks(model);
+
+  console.log("\nAdd column:");
+  runAddColumnChecks(model);
+
+  console.log("\nRemove column:");
+  runRemoveColumnChecks(model);
+
+  console.log(`\n${failures === 0 ? "ALL P3 CHECKS PASSED" : `${failures} P3 CHECK(S) FAILED`}`);
+  process.exit(failures === 0 ? 0 : 1);
+}
+
+function runAddFkChecks(model: ReturnType<typeof buildProjectModel>["model"]): void {
   const params = {
     fromTableKey: "dbo.pr_buying_season",
     fromColumn: "last_modified_user_id",
@@ -349,8 +371,7 @@ function runVerifyP3(): void {
   );
 
   const prepared = prepareAddForeignKey(model, params);
-  check("add FK candidate builds", prepared.ok === true);
-  if (prepared.ok) {
+  if (checkPrepareOk("add FK candidate builds", prepared)) {
     check(
       "candidate emits named FOREIGN KEY",
       prepared.candidate.candidateContent.includes(
@@ -363,30 +384,135 @@ function runVerifyP3(): void {
     );
   }
 
-  const duplicate = prepareAddForeignKey(applyAddForeignKeyToModel(model, params), params);
-  check("duplicate FK rejected", duplicate.ok === false, duplicate.ok ? undefined : duplicate.message);
-
-  const readOnly = prepareAddForeignKey(model, {
-    fromTableKey: "dbo.InvBuyer",
-    fromColumn: "Buyer",
-    toTableKey: "dbo.pr_port",
-    toColumn: "port_id",
-    constraintName: "FK_test_readonly",
-  });
-  check("read-only source rejected", readOnly.ok === false, readOnly.ok ? undefined : readOnly.message);
-
-  const missingColumn = prepareAddForeignKey(model, {
-    ...params,
-    fromColumn: "not_a_column",
-  });
-  check(
-    "missing source column rejected",
-    missingColumn.ok === false,
-    missingColumn.ok ? undefined : missingColumn.message,
+  checkPrepareRejected(
+    "duplicate FK rejected",
+    prepareAddForeignKey(applyAddForeignKeyToModel(model, params), params),
   );
 
-  console.log(`\n${failures === 0 ? "ALL P3 CHECKS PASSED" : `${failures} P3 CHECK(S) FAILED`}`);
-  process.exit(failures === 0 ? 0 : 1);
+  checkPrepareRejected(
+    "read-only source rejected",
+    prepareAddForeignKey(model, {
+      fromTableKey: "dbo.InvBuyer",
+      fromColumn: "Buyer",
+      toTableKey: "dbo.pr_port",
+      toColumn: "port_id",
+      constraintName: "FK_test_readonly",
+    }),
+  );
+
+  checkPrepareRejected(
+    "missing source column rejected",
+    prepareAddForeignKey(model, {
+      ...params,
+      fromColumn: "not_a_column",
+    }),
+  );
+}
+
+function runAddColumnChecks(model: ReturnType<typeof buildProjectModel>["model"]): void {
+  const params = {
+    tableKey: "dbo.pr_buying_season",
+    columnName: "test_column_erdforge",
+    dataType: "INT",
+    nullable: true,
+    trailingComment: "added by verify:p3",
+  };
+
+  const prepared = prepareAddColumn(model, params);
+  if (checkPrepareOk("add column candidate builds", prepared)) {
+    check(
+      "candidate emits new column before constraints",
+      prepared.candidate.candidateContent.includes(
+        "test_column_erdforge INT NULL, -- added by verify:p3",
+      ),
+    );
+    check(
+      "candidate differs from on-disk source",
+      prepared.candidate.candidateContent !== prepared.candidate.originalContent,
+    );
+
+    const mutated = applyAddColumnToModel(model, params);
+    const table = mutated.tables.get(params.tableKey);
+    const names = table ? memberNames(table) : [];
+    check(
+      "new column inserted before PERIOD/PK",
+      names.indexOf("test_column_erdforge") < names.indexOf("PERIOD"),
+      JSON.stringify(names),
+    );
+  }
+
+  checkPrepareRejected(
+    "duplicate column rejected",
+    prepareAddColumn(applyAddColumnToModel(model, params), params),
+  );
+
+  checkPrepareRejected(
+    "read-only table rejected",
+    prepareAddColumn(model, {
+      ...params,
+      tableKey: "dbo.InvBuyer",
+      columnName: "extra_col",
+    }),
+  );
+
+  checkPrepareRejected(
+    "invalid column name rejected",
+    prepareAddColumn(model, {
+      ...params,
+      columnName: "bad name",
+    }),
+  );
+}
+
+function runRemoveColumnChecks(model: ReturnType<typeof buildProjectModel>["model"]): void {
+  const params = {
+    tableKey: "dbo.pr_buying_season",
+    columnName: "last_modified_user_id",
+  };
+
+  const prepared = prepareRemoveColumn(model, params);
+  if (checkPrepareOk("remove column candidate builds", prepared)) {
+    check(
+      "candidate omits removed column",
+      !prepared.candidate.candidateContent.includes("last_modified_user_id"),
+    );
+    check(
+      "candidate differs from on-disk source",
+      prepared.candidate.candidateContent !== prepared.candidate.originalContent,
+    );
+  }
+
+  checkPrepareRejected(
+    "PK column removal blocked",
+    prepareRemoveColumn(model, {
+      tableKey: "dbo.pr_buying_season",
+      columnName: "buying_season_id",
+    }),
+  );
+
+  checkPrepareRejected(
+    "FK column removal blocked",
+    prepareRemoveColumn(model, {
+      tableKey: "dbo.pr_procurement_header",
+      columnName: "buying_season_id",
+    }),
+  );
+
+  checkPrepareRejected(
+    "inbound FK reference blocks removal",
+    prepareRemoveColumn(model, {
+      tableKey: "dbo.pr_port",
+      columnName: "port_id",
+    }),
+  );
+
+  checkPrepareRejected(
+    "missing column rejected",
+    prepareRemoveColumn(model, {
+      ...params,
+      columnName: "not_a_column",
+    }),
+  );
 }
 
 function indent(text: string): string {

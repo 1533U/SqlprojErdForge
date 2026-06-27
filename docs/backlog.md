@@ -52,7 +52,7 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
 | P3-1 | Add foreign key | done | webview two-click connect → diff preview → apply |
-| P3-2 | Add / remove column | todo | |
+| P3-2 | Add / remove column | done | webview Add/Remove column modes; PK/FK guardrails on remove |
 | P3-3 | Rename column (multi-file FK updates) | todo | |
 | P3-4 | Change column type / nullability | todo | |
 | P3-5 | Add table (new file + layout entry) | todo | |

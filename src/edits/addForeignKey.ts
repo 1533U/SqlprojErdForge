@@ -3,7 +3,6 @@
  */
 
 import type {
-  Column,
   Constraint,
   ForeignKeyConstraint,
   Member,
@@ -11,16 +10,17 @@ import type {
   Table,
 } from "../model.ts";
 import { assertNever } from "../model.ts";
+import { buildFileEditCandidate } from "./candidate.ts";
 import { cloneProjectModel } from "./cloneModel.ts";
-import { emitTable } from "../emitter.ts";
-import { contentRevision, readTableSource, tableAbsPath } from "./paths.ts";
+import {
+  findColumn,
+  splitTableKey,
+  validateEditableTable,
+} from "./memberChecks.ts";
+import { suggestForeignKeyName } from "./naming.ts";
 import type { AddForeignKeyParams, EditValidationResult } from "./types.ts";
 
-export function suggestForeignKeyName(fromTableKey: string, toTableKey: string): string {
-  const from = tableShortName(fromTableKey);
-  const to = tableShortName(toTableKey);
-  return `FK_${from}_${to}`;
-}
+export { suggestForeignKeyName };
 
 export function prepareAddForeignKey(
   model: ProjectModel,
@@ -35,6 +35,30 @@ export function prepareAddForeignKey(
     return { ok: false, message: `Table not found: ${params.fromTableKey}` };
   }
 
+  applyForeignKeyMutation(table, params);
+  return buildFileEditCandidate(model, table, params.fromTableKey);
+}
+
+export function applyAddForeignKeyToModel(
+  model: ProjectModel,
+  params: AddForeignKeyParams,
+): ProjectModel {
+  const validation = validateAddForeignKey(model, params);
+  if (!validation.ok) {
+    throw new Error(validation.message);
+  }
+
+  const mutated = cloneProjectModel(model);
+  const table = mutated.tables.get(params.fromTableKey);
+  if (!table) {
+    throw new Error(`Table not found: ${params.fromTableKey}`);
+  }
+
+  applyForeignKeyMutation(table, params);
+  return mutated;
+}
+
+function applyForeignKeyMutation(table: Table, params: AddForeignKeyParams): void {
   const [toSchema, toTable] = splitTableKey(params.toTableKey);
   const fk: ForeignKeyConstraint = {
     kind: "constraint",
@@ -48,54 +72,6 @@ export function prepareAddForeignKey(
     },
   };
   table.members.push(fk);
-
-  let originalContent: string;
-  try {
-    originalContent = readTableSource(model.projectPath, table);
-  } catch {
-    return { ok: false, message: `Source file not found for ${params.fromTableKey}` };
-  }
-
-  return {
-    ok: true,
-    candidate: {
-      absPath: tableAbsPath(model.projectPath, table),
-      sourceFile: table.sourceFile,
-      originalContent,
-      candidateContent: emitTable(table),
-      originalRevision: contentRevision(originalContent),
-    },
-  };
-}
-
-export function applyAddForeignKeyToModel(
-  model: ProjectModel,
-  params: AddForeignKeyParams,
-): ProjectModel {
-  const result = prepareAddForeignKey(model, params);
-  if (!result.ok) {
-    throw new Error(result.message);
-  }
-
-  const mutated = cloneProjectModel(model);
-  const table = mutated.tables.get(params.fromTableKey);
-  if (!table) {
-    throw new Error(`Table not found: ${params.fromTableKey}`);
-  }
-
-  const [toSchema, toTable] = splitTableKey(params.toTableKey);
-  table.members.push({
-    kind: "constraint",
-    constraintType: "foreignKey",
-    name: params.constraintName,
-    columns: [params.fromColumn],
-    references: {
-      schema: toSchema,
-      table: toTable,
-      columns: [params.toColumn],
-    },
-  });
-  return mutated;
 }
 
 function validateAddForeignKey(
@@ -106,26 +82,18 @@ function validateAddForeignKey(
     return { ok: false, message: "Cannot create a foreign key from a table to itself." };
   }
 
-  const fromTable = model.tables.get(params.fromTableKey);
-  if (!fromTable) {
-    return { ok: false, message: `Source table not found: ${params.fromTableKey}` };
-  }
+  const fromResult = validateEditableTable(
+    model.tables.get(params.fromTableKey),
+    params.fromTableKey,
+  );
+  if (!fromResult.ok) return fromResult;
+
   const toTable = model.tables.get(params.toTableKey);
   if (!toTable) {
     return { ok: false, message: `Referenced table not found: ${params.toTableKey}` };
   }
 
-  if (fromTable.readOnly) {
-    return { ok: false, message: `${params.fromTableKey} is read-only and cannot be edited.` };
-  }
-  if (!fromTable.roundTrippable) {
-    return {
-      ok: false,
-      message: `${params.fromTableKey} has un-modeled content and cannot be rewritten safely.`,
-    };
-  }
-
-  if (!findColumn(fromTable, params.fromColumn)) {
+  if (!findColumn(fromResult.table, params.fromColumn)) {
     return {
       ok: false,
       message: `Column ${params.fromColumn} not found on ${params.fromTableKey}.`,
@@ -149,14 +117,14 @@ function validateAddForeignKey(
     };
   }
 
-  if (constraintNameExists(fromTable, constraintName)) {
+  if (constraintNameExists(fromResult.table, constraintName)) {
     return {
       ok: false,
       message: `Constraint ${constraintName} already exists on ${params.fromTableKey}.`,
     };
   }
 
-  if (foreignKeyExists(fromTable, params.fromColumn, params.toTableKey, params.toColumn)) {
+  if (foreignKeyExists(fromResult.table, params.fromColumn, params.toTableKey, params.toColumn)) {
     return {
       ok: false,
       message: `A foreign key on ${params.fromColumn} → ${params.toTableKey}.${params.toColumn} already exists.`,
@@ -164,10 +132,6 @@ function validateAddForeignKey(
   }
 
   return { ok: true };
-}
-
-function findColumn(table: Table, name: string): Column | undefined {
-  return table.members.find((m): m is Column => m.kind === "column" && m.name === name);
 }
 
 function constraintNameExists(table: Table, name: string): boolean {
@@ -194,17 +158,6 @@ function foreignKeyExists(
       m.references.columns[0] === toColumn
     );
   });
-}
-
-function splitTableKey(key: string): [string, string] {
-  const dot = key.indexOf(".");
-  if (dot === -1) return ["dbo", key];
-  return [key.slice(0, dot), key.slice(dot + 1)];
-}
-
-function tableShortName(tableKey: string): string {
-  const dot = tableKey.indexOf(".");
-  return dot === -1 ? tableKey : tableKey.slice(dot + 1);
 }
 
 /** Exported for tests — inspect member list shape after an edit. */

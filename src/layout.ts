@@ -7,17 +7,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-export interface TableLayout {
-  x: number;
-  y: number;
-  collapsed?: boolean;
-  color?: string;
-}
+import type { LayoutFile, TableLayout } from "./protocol/graphPayload.ts";
 
-export interface LayoutFile {
-  version: 1;
-  tables: Record<string, TableLayout>;
-}
+export type { LayoutFile, TableLayout };
 
 export const LAYOUT_RELATIVE_PATH = join(".erdforge", "layout.json");
 

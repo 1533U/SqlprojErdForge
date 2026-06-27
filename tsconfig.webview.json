@@ -6,5 +6,5 @@
     "types": ["react", "react-dom"],
     "allowImportingTsExtensions": false
   },
-  "include": ["webview/src/**/*.ts", "webview/src/**/*.tsx"]
+  "include": ["webview/src/**/*.ts", "webview/src/**/*.tsx", "src/protocol/**/*.ts", "src/edits/naming.ts"]
 }

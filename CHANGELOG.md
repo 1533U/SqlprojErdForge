@@ -7,7 +7,17 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 
 ## [Unreleased]
 
+### Changed
+- **Phase 3 refactor:** deduplicated edit pipeline (`buildFileEditCandidate`, per-op mutation
+  helpers, shared `validateEditableTable` / `findColumn` / `splitTableKey`), unified host/webview
+  protocol types in `src/protocol/`, generic `handlePrepareEdit` in the extension panel, grouped
+  webview edit session state, and slimmer `verify:p3` helpers in `src/cli.ts`. Behavior unchanged.
+
 ### Added
+- **Phase 3 — add / remove column** (`P3-2`): webview **Add column** (table header → name/type/
+  nullable/description → preview) and **Remove column** (column pick → preview); edit ops in
+  `src/edits/addColumn.ts` and `src/edits/removeColumn.ts` with PK/FK/inbound-FK guardrails on
+  remove; `npm run verify:p3` extended.
 - **Phase 3 — add foreign key** (`P3-1`): webview **Add FK** mode (source column → target PK),
   edit layer in `src/edits/`, diff preview with **Apply** / **Discard** editor actions, conflict
   check on stale apply. `npm run verify:p3` for headless validation.

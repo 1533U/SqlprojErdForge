@@ -8,8 +8,16 @@ import type { ElkNode } from "elkjs";
 import type { Edge, ProjectModel, Table } from "./model.ts";
 import { assertNever } from "./model.ts";
 import { buildEdges } from "./erd.ts";
-import type { LayoutFile, TableLayout } from "./layout.ts";
 import { emptyLayout } from "./layout.ts";
+import type {
+  GraphColumn,
+  GraphEdge,
+  GraphPayload,
+  GraphTable,
+  LayoutFile,
+  TableLayout,
+} from "./protocol/graphPayload.ts";
+export type { GraphColumn, GraphEdge, GraphPayload, GraphTable, LayoutFile, TableLayout };
 
 const elk = new ElkConstructor();
 
@@ -18,38 +26,6 @@ const ROW_HEIGHT = 22;
 const DESCRIPTION_ROW_HEIGHT = 18;
 const HEADER_HEIGHT = 36;
 const PADDING = 12;
-
-export interface GraphColumn {
-  name: string;
-  dataType: string;
-  nullable: boolean;
-  isPrimaryKey: boolean;
-  isForeignKey: boolean;
-  /** Member trailing comment (`-- …` on the column line); shown on the ERD when enabled. */
-  description?: string;
-}
-
-export interface GraphTable {
-  key: string;
-  schema: string;
-  name: string;
-  readOnly: boolean;
-  columns: GraphColumn[];
-}
-
-export interface GraphEdge {
-  id: string;
-  from: string;
-  to: string;
-  label: string;
-}
-
-export interface GraphPayload {
-  projectName: string;
-  tables: GraphTable[];
-  edges: GraphEdge[];
-  layout: LayoutFile;
-}
 
 function estimateNodeHeight(table: GraphTable): number {
   const descriptionRows = table.columns.filter((c) => c.description).length;
