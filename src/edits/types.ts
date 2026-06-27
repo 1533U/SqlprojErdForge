@@ -31,6 +31,13 @@ export interface RenameColumnParams {
   newName: string;
 }
 
+export interface ChangeColumnParams {
+  tableKey: string;
+  columnName: string;
+  dataType: string;
+  nullable: boolean;
+}
+
 export interface FileEditCandidate {
   /** Absolute path to the on-disk .sql file. */
   absPath: string;

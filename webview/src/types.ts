@@ -1,3 +1,5 @@
+import type { ColumnRef, EditMode } from "../../src/edits/editInteraction";
+
 export type {
   GraphColumn,
   GraphEdge,
@@ -10,20 +12,15 @@ export type {
 export type {
   AddColumnIntent,
   AddForeignKeyIntent,
+  ChangeColumnIntent,
   HostToWebviewMessage,
   RemoveColumnIntent,
   RenameColumnIntent,
   WebviewToHostMessage,
 } from "../../src/protocol/messages";
 
+export type { ColumnRef, EditMode };
 export { suggestForeignKeyName } from "../../src/edits/naming";
-
-export interface ColumnRef {
-  tableKey: string;
-  columnName: string;
-}
-
-export type EditMode = "none" | "addFk" | "addColumn" | "removeColumn" | "renameColumn";
 
 export interface NewColumnDraft {
   name: string;
@@ -39,6 +36,16 @@ export const defaultNewColumnDraft = (): NewColumnDraft => ({
   description: "",
 });
 
+export interface ChangeColumnDraft {
+  dataType: string;
+  nullable: boolean;
+}
+
+export const defaultChangeColumnDraft = (): ChangeColumnDraft => ({
+  dataType: "INT",
+  nullable: true,
+});
+
 export interface EditSessionState {
   mode: EditMode;
   fkSource: ColumnRef | undefined;
@@ -47,6 +54,9 @@ export interface EditSessionState {
   removeColumnTarget: ColumnRef | undefined;
   renameColumnTarget: ColumnRef | undefined;
   renameNewName: string;
+  changeColumnTarget: ColumnRef | undefined;
+  changeColumnOriginal: ChangeColumnDraft | undefined;
+  changeColumnDraft: ChangeColumnDraft;
   newColumn: NewColumnDraft;
   message: string | undefined;
 }
@@ -59,6 +69,9 @@ export const initialEditSession = (): EditSessionState => ({
   removeColumnTarget: undefined,
   renameColumnTarget: undefined,
   renameNewName: "",
+  changeColumnTarget: undefined,
+  changeColumnOriginal: undefined,
+  changeColumnDraft: defaultChangeColumnDraft(),
   newColumn: defaultNewColumnDraft(),
   message: undefined,
 });
@@ -72,6 +85,9 @@ export function resetEditSelection(session: EditSessionState): EditSessionState 
     removeColumnTarget: undefined,
     renameColumnTarget: undefined,
     renameNewName: "",
+    changeColumnTarget: undefined,
+    changeColumnOriginal: undefined,
+    changeColumnDraft: defaultChangeColumnDraft(),
     newColumn: defaultNewColumnDraft(),
     message: undefined,
   };

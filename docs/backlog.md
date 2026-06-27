@@ -54,7 +54,7 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 | P3-1 | Add foreign key | done | webview two-click connect → diff preview → apply |
 | P3-2 | Add / remove column | done | webview Add/Remove column modes; PK/FK guardrails on remove |
 | P3-3 | Rename column (multi-file FK updates) | done | propagates to inbound REFERENCES; sequential diff preview 1/N |
-| P3-4 | Change column type / nullability | todo | |
+| P3-4 | Change column type / nullability | done | webview Change column mode; IDENTITY/temporal/PK guardrails |
 | P3-5 | Add table (new file + layout entry) | todo | |
 | P3-6 | Drop table (delete file, warn on inbound FKs) | todo | |
 | P3-7 | Rename table (file + FKs + layout key migration) | todo | |

@@ -69,8 +69,8 @@ Order of operations:
 1. Add foreign key — **done** (`P3-1`).
 2. Add / remove column — **done** (`P3-2`).
 3. Rename column (multi-file FK updates) — **done** (`P3-3`).
-4. Change column type / nullability — **next** (`P3-4`).
-5. Add table (new file + layout entry).
+4. Change column type / nullability — **done** (`P3-4`).
+5. Add table (new file + layout entry) — **next** (`P3-5`).
 6. Drop table (delete file, warn on inbound FKs).
 7. Rename table (rename file, update FKs, migrate layout key).
 

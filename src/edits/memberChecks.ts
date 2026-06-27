@@ -131,6 +131,47 @@ export function findInboundFkReferences(
   return refs;
 }
 
+export function columnTypeChangeBlockReason(
+  model: ProjectModel,
+  tableKey: string,
+  columnName: string,
+  newNullable: boolean,
+): string | undefined {
+  const table = model.tables.get(tableKey);
+  if (!table) return `Table not found: ${tableKey}`;
+
+  const column = findColumn(table, columnName);
+  if (!column) return undefined;
+
+  if (column.computed !== undefined) {
+    return `Column ${columnName} is computed and cannot be edited.`;
+  }
+  if (column.generatedAs) {
+    return `Column ${columnName} is a temporal generated column and cannot be edited.`;
+  }
+  if (column.identity) {
+    return `Column ${columnName} is an IDENTITY column and cannot be edited.`;
+  }
+
+  for (const member of table.members) {
+    if (member.kind === "period") {
+      if (member.startColumn === columnName || member.endColumn === columnName) {
+        return `Column ${columnName} is used by PERIOD FOR SYSTEM_TIME and cannot be edited.`;
+      }
+      continue;
+    }
+    if (member.kind !== "constraint") continue;
+
+    if (member.constraintType === "primaryKey" && member.columns.includes(columnName)) {
+      if (newNullable) {
+        return `Column ${columnName} is part of primary key ${member.name} and cannot be nullable.`;
+      }
+    }
+  }
+
+  return undefined;
+}
+
 export function replaceColumnNameInList(
   columns: string[],
   oldName: string,

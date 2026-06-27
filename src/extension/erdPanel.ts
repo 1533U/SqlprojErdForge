@@ -4,20 +4,17 @@
 
 import { dirname } from "node:path";
 import * as vscode from "vscode";
-import { applyLayoutUpdate, buildGraphPayload } from "../graph.ts";
+import { buildGraphPayload } from "../graph.ts";
 import type { GraphPayload } from "../graph.ts";
-import { readLayout, writeLayout } from "../layout.ts";
+import { applyLayoutUpdate, readLayout, writeLayout } from "../layout.ts";
 import type { LayoutFile } from "../layout.ts";
 import type { ProjectModel } from "../model.ts";
 import { buildProjectModel } from "../project.ts";
-import { prepareAddColumn } from "../edits/addColumn.ts";
-import { prepareAddForeignKey, suggestForeignKeyName } from "../edits/addForeignKey.ts";
-import { prepareRemoveColumn } from "../edits/removeColumn.ts";
-import { prepareRenameColumn } from "../edits/renameColumn.ts";
-import type { EditValidationResult } from "../edits/types.ts";
+import { suggestForeignKeyName } from "../edits/addForeignKey.ts";
 import { ErdDiagnostics } from "./diagnostics.ts";
+import { isEditMessage, prepareEditFromMessage } from "./editDispatch.ts";
 import { type DiffPreviewController } from "./diffPreview.ts";
-import { isWebviewToHostMessage, type HostToWebviewMessage } from "./messages.ts";
+import { isWebviewToHostMessage, type HostToWebviewMessage, type WebviewToHostMessage } from "./messages.ts";
 import { watchSqlFiles } from "./watcher.ts";
 
 export class ErdPanel {
@@ -164,56 +161,39 @@ export class ErdPanel {
         );
         writeLayout(this.projectPath, this.layout);
         break;
-      case "addForeignKey": {
-        const intent = message.intent;
-        const constraintName =
-          intent.constraintName.trim() ||
-          suggestForeignKeyName(intent.fromTableKey, intent.toTableKey);
-        void this.handlePrepareEdit(
-          (model) => prepareAddForeignKey(model, { ...intent, constraintName }),
-          `Add FK ${intent.fromTableKey}.${intent.fromColumn} → ${intent.toTableKey}.${intent.toColumn}`,
-        );
-        break;
-      }
-      case "addColumn": {
-        const intent = message.intent;
-        void this.handlePrepareEdit(
-          (model) => prepareAddColumn(model, intent),
-          `Add column ${intent.tableKey}.${intent.columnName}`,
-        );
-        break;
-      }
-      case "removeColumn": {
-        const intent = message.intent;
-        void this.handlePrepareEdit(
-          (model) => prepareRemoveColumn(model, intent),
-          `Remove column ${intent.tableKey}.${intent.columnName}`,
-        );
-        break;
-      }
-      case "renameColumn": {
-        const intent = message.intent;
-        void this.handlePrepareEdit(
-          (model) => prepareRenameColumn(model, intent),
-          `Rename column ${intent.tableKey}.${intent.oldName} → ${intent.newName}`,
-        );
-        break;
-      }
       default:
+        if (isEditMessage(message)) {
+          void this.handleEditMessage(message);
+        }
         break;
     }
   }
 
-  private async handlePrepareEdit(
-    prepare: (model: ProjectModel) => EditValidationResult,
-    title: string,
+  private async handleEditMessage(
+    message: Extract<
+      WebviewToHostMessage,
+      { type: "addForeignKey" | "addColumn" | "removeColumn" | "renameColumn" | "changeColumn" }
+    >,
   ): Promise<void> {
     if (!this.model) {
       this.postMessage({ type: "editResult", ok: false, message: "Model not loaded yet." });
       return;
     }
 
-    const result = prepare(this.model);
+    const normalized =
+      message.type === "addForeignKey"
+        ? {
+            ...message,
+            intent: {
+              ...message.intent,
+              constraintName:
+                message.intent.constraintName.trim() ||
+                suggestForeignKeyName(message.intent.fromTableKey, message.intent.toTableKey),
+            },
+          }
+        : message;
+
+    const { result, title } = prepareEditFromMessage(this.model, normalized);
     if (!result.ok) {
       this.postMessage({ type: "editResult", ok: false, message: result.message });
       void vscode.window.showWarningMessage(`ErdForge: ${result.message}`);

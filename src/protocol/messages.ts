@@ -3,33 +3,19 @@
  */
 
 import type { GraphPayload } from "./graphPayload.ts";
+import type {
+  AddColumnParams,
+  AddForeignKeyParams,
+  ChangeColumnParams,
+  RemoveColumnParams,
+  RenameColumnParams,
+} from "../edits/types.ts";
 
-export interface AddForeignKeyIntent {
-  fromTableKey: string;
-  fromColumn: string;
-  toTableKey: string;
-  toColumn: string;
-  constraintName: string;
-}
-
-export interface AddColumnIntent {
-  tableKey: string;
-  columnName: string;
-  dataType: string;
-  nullable: boolean;
-  trailingComment?: string;
-}
-
-export interface RemoveColumnIntent {
-  tableKey: string;
-  columnName: string;
-}
-
-export interface RenameColumnIntent {
-  tableKey: string;
-  oldName: string;
-  newName: string;
-}
+export type AddForeignKeyIntent = AddForeignKeyParams;
+export type AddColumnIntent = AddColumnParams;
+export type RemoveColumnIntent = RemoveColumnParams;
+export type RenameColumnIntent = RenameColumnParams;
+export type ChangeColumnIntent = ChangeColumnParams;
 
 export type HostToWebviewMessage =
   | { type: "graph"; payload: GraphPayload }
@@ -43,7 +29,8 @@ export type WebviewToHostMessage =
   | { type: "addForeignKey"; intent: AddForeignKeyIntent }
   | { type: "addColumn"; intent: AddColumnIntent }
   | { type: "removeColumn"; intent: RemoveColumnIntent }
-  | { type: "renameColumn"; intent: RenameColumnIntent };
+  | { type: "renameColumn"; intent: RenameColumnIntent }
+  | { type: "changeColumn"; intent: ChangeColumnIntent };
 
 export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMessage {
   if (!value || typeof value !== "object") return false;
@@ -55,6 +42,7 @@ export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMe
     case "addColumn":
     case "removeColumn":
     case "renameColumn":
+    case "changeColumn":
       return true;
     default:
       return false;

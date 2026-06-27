@@ -4,11 +4,12 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-27
-**Current phase:** Phase 3 in progress — next: change column type (`P3-4`)
+**Current phase:** Phase 3 in progress — next: add table (`P3-5`)
 **Overall state:** Phase 0–2 complete. Phase 3: **Add FK** (`P3-1`), **Add/remove column**
-(`P3-2`), **Rename column** (`P3-3`), **single-file diff preview + Apply/Discard**
-(`P3-8` partial), and the **edit-pipeline refactor** are landed and verified via
-`npm run verify:p3`. Remaining Phase 3 ops (type change, table add/drop/rename) not started.
+(`P3-2`), **Rename column** (`P3-3`), **Change column type/nullability** (`P3-4`),
+**single-file diff preview + Apply/Discard** (`P3-8` partial), and the **edit-pipeline refactor**
+are landed and verified via `npm run verify:p3`. Remaining Phase 3 ops (table add/drop/rename)
+not started.
 Multi-file rename uses sequential diff preview (Apply advances 1/N); full Refactor Preview
 deferred to `P4-3`. Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
 
@@ -91,14 +92,21 @@ deferred to `P4-3`. Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
   - Webview **Rename column** mode: column pick → new name → preview; multi-file edits use
     sequential diff preview (`1/N`) in [`diffPreview.ts`](../src/extension/diffPreview.ts).
   - `EditValidationResult` now returns `candidates[]`; `npm run verify:p3` extended.
+- **Phase 3 — change column type / nullability** (`P3-4`, 2026-06-27):
+  - [`src/edits/changeColumn.ts`](../src/edits/changeColumn.ts): update `dataType` and
+    `nullable` on one column; guardrails for IDENTITY, computed/temporal, PERIOD, and PK
+    nullability via [`columnTypeChangeBlockReason`](../src/edits/memberChecks.ts).
+  - Webview **Change column** mode: column pick → type/nullable form → preview.
+  - Registered as fifth op in [`src/edits/registry.ts`](../src/edits/registry.ts);
+    `npm run verify:p3` extended.
 
 ## In progress
 
-- _None._ Next session starts **P3-4** (change column type / nullability).
+- _None._ Next session starts **P3-5** (add table).
 
 ## Next up (immediate — start here next session)
 
-1. **P3-4** — change column type / nullability.
+1. **P3-5** — add table (new file + layout entry).
 2. Pin the **exact canonical formatting rules** (`P0-15`).
 3. Triage real-project coverage gaps (`P0-14`).
 

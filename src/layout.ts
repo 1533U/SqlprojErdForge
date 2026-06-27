@@ -44,15 +44,15 @@ export function writeLayout(projectPath: string, layout: LayoutFile): void {
   writeFileSync(path, `${JSON.stringify(layout, null, 2)}\n`, "utf8");
 }
 
-export function mergeTablePosition(
+export function applyLayoutUpdate(
   layout: LayoutFile,
   tableKey: string,
   x: number,
   y: number,
 ): LayoutFile {
-  const existing = layout.tables[tableKey];
+  const existing: TableLayout | undefined = layout.tables[tableKey];
   return {
-    ...layout,
+    version: 1,
     tables: {
       ...layout.tables,
       [tableKey]: {

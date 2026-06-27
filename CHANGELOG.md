@@ -16,6 +16,10 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
   webview edit session state, and slimmer `verify:p3` helpers in `src/cli.ts`. Behavior unchanged.
 
 ### Added
+- **Phase 3 — change column type / nullability** (`P3-4`): webview **Change column** mode
+  (column pick → type/nullable form → preview); edit op in `src/edits/changeColumn.ts` with
+  shared guardrails in `columnTypeChangeBlockReason`; registered in edit registry;
+  `npm run verify:p3` extended.
 - **Phase 3 — rename column** (`P3-3`): webview **Rename column** mode (column pick → new name
   → preview); edit op in `src/edits/renameColumn.ts` propagates renames to PK/unique/FK local
   columns, PERIOD bounds, and inbound `REFERENCES` across files; multi-file sequential diff
