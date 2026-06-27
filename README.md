@@ -67,9 +67,10 @@ See [`docs/02-architecture.md`](docs/02-architecture.md) for the full picture an
 
 ## Status
 
-**Phase 1 complete** — read-only ERD verified on fixtures and the real OSConnectWeylandtsDB
-project (~96 tables, 105 in-project FK edges in ~750 ms). Run `npm run verify:p1` for
-headless exit-criteria checks. Phase 0 spike remains green. See [`docs/STATUS.md`](docs/STATUS.md).
+**Phase 3 in progress** — bidirectional editing: **Add FK** (`P3-1`), **add/remove column**
+(`P3-2`), **rename column** (`P3-3`, multi-file FK propagation), and single-file diff preview
+with **Apply** / **Discard** are landed; run `npm run verify:p3`. Phase 2 column comments and Phase 1 read-only ERD remain verified
+(`npm run verify:p1`). Phase 0 spike remains green. See [`docs/STATUS.md`](docs/STATUS.md).
 
 ## Quick start
 
@@ -82,14 +83,17 @@ npm install
 npm run spike        # fixture corpus: idempotency, comments, C9, C10 — must pass
 npm run spike:real   # read-only discovery smoke test on the real ~760-file project
 npm run verify:p1    # Phase 1 exit criteria: graph, layout, refresh timing, scale
+npm run verify:p3    # Phase 3 edit ops: add FK, add/remove column (headless)
 npm run typecheck
 ```
 
-### Phase 1 extension (VS Code)
+### VS Code extension (Phase 1+)
 
 ```bash
 npm install
 npm run compile      # bundles extension host + webview
+npm run verify:p1    # headless ERD checks
+npm run verify:p3    # headless edit-op checks
 npm run typecheck
 ```
 

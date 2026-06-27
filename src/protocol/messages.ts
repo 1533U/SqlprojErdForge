@@ -25,6 +25,12 @@ export interface RemoveColumnIntent {
   columnName: string;
 }
 
+export interface RenameColumnIntent {
+  tableKey: string;
+  oldName: string;
+  newName: string;
+}
+
 export type HostToWebviewMessage =
   | { type: "graph"; payload: GraphPayload }
   | { type: "error"; message: string }
@@ -36,7 +42,8 @@ export type WebviewToHostMessage =
   | { type: "layoutUpdate"; tableKey: string; x: number; y: number }
   | { type: "addForeignKey"; intent: AddForeignKeyIntent }
   | { type: "addColumn"; intent: AddColumnIntent }
-  | { type: "removeColumn"; intent: RemoveColumnIntent };
+  | { type: "removeColumn"; intent: RemoveColumnIntent }
+  | { type: "renameColumn"; intent: RenameColumnIntent };
 
 export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMessage {
   if (!value || typeof value !== "object") return false;
@@ -47,6 +54,7 @@ export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMe
     case "addForeignKey":
     case "addColumn":
     case "removeColumn":
+    case "renameColumn":
       return true;
     default:
       return false;

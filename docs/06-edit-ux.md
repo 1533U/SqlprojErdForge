@@ -53,15 +53,18 @@ but it offers three ways to do "show before/after, then confirm," which we combi
 
 ## Supported edit operations (introduced incrementally)
 
+**Shipped (2026-06-27):** add foreign key; add / remove column; rename column (with inbound FK
+propagation); single-file diff preview with Apply/Discard. Multi-file rename uses sequential
+diff preview (`1/N`); full Refactor Preview panel deferred to Phase 4 (`P4-3`).
+
 Edits are added one well-defined operation at a time, each = *mutate model → emit affected
 file(s) → preview → apply*:
 
-1. **Add foreign key** (first — high value, structurally trivial: append a named FK
-   constraint to one table).
-2. **Add column** / **remove column**.
-3. **Rename column** (must update FK definitions that reference it; multi-file → Refactor
-   Preview).
-4. **Change column type / nullability**.
+1. **Add foreign key** — **done** (`P3-1`).
+2. **Add column** / **remove column** — **done** (`P3-2`).
+3. **Rename column** (must update FK definitions that reference it; multi-file → sequential
+   diff preview) — **done** (`P3-3`).
+4. **Change column type / nullability** — **next** (`P3-4`).
 5. **Add table** (creates a new `schema.table.sql` file + a layout entry).
 6. **Drop table** (deletes the file; warn if other tables reference it).
 7. **Rename table** (rename file, update referencing FKs, migrate the layout key).

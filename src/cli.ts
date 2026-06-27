@@ -29,8 +29,9 @@ import { readLayout, writeLayout } from "./layout.ts";
 import { applyAddColumnToModel, prepareAddColumn } from "./edits/addColumn.ts";
 import { applyAddForeignKeyToModel, prepareAddForeignKey, suggestForeignKeyName } from "./edits/addForeignKey.ts";
 import { applyRemoveColumnToModel, prepareRemoveColumn } from "./edits/removeColumn.ts";
+import { applyRenameColumnToModel, prepareRenameColumn } from "./edits/renameColumn.ts";
 import { findColumn } from "./edits/memberChecks.ts";
-import type { EditValidationResult } from "./edits/types.ts";
+import type { EditValidationResult, FileEditCandidate } from "./edits/types.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..");
@@ -47,8 +48,13 @@ function check(label: string, ok: boolean, detail?: string): void {
 }
 
 function checkPrepareOk(label: string, result: EditValidationResult): result is Extract<EditValidationResult, { ok: true }> {
-  check(label, result.ok === true);
-  return result.ok === true;
+  const ok = result.ok === true && result.candidates.length > 0;
+  check(label, ok);
+  return ok;
+}
+
+function primaryCandidate(result: Extract<EditValidationResult, { ok: true }>): FileEditCandidate {
+  return result.candidates[0]!;
 }
 
 function checkPrepareRejected(label: string, result: EditValidationResult): void {
@@ -352,6 +358,9 @@ function runVerifyP3(): void {
   console.log("\nRemove column:");
   runRemoveColumnChecks(model);
 
+  console.log("\nRename column:");
+  runRenameColumnChecks(model);
+
   console.log(`\n${failures === 0 ? "ALL P3 CHECKS PASSED" : `${failures} P3 CHECK(S) FAILED`}`);
   process.exit(failures === 0 ? 0 : 1);
 }
@@ -372,15 +381,16 @@ function runAddFkChecks(model: ReturnType<typeof buildProjectModel>["model"]): v
 
   const prepared = prepareAddForeignKey(model, params);
   if (checkPrepareOk("add FK candidate builds", prepared)) {
+    const candidate = primaryCandidate(prepared);
     check(
       "candidate emits named FOREIGN KEY",
-      prepared.candidate.candidateContent.includes(
+      candidate.candidateContent.includes(
         `CONSTRAINT ${params.constraintName} FOREIGN KEY (last_modified_user_id) REFERENCES dbo.pr_port (port_id)`,
       ),
     );
     check(
       "candidate differs from on-disk source",
-      prepared.candidate.candidateContent !== prepared.candidate.originalContent,
+      candidate.candidateContent !== candidate.originalContent,
     );
   }
 
@@ -420,15 +430,16 @@ function runAddColumnChecks(model: ReturnType<typeof buildProjectModel>["model"]
 
   const prepared = prepareAddColumn(model, params);
   if (checkPrepareOk("add column candidate builds", prepared)) {
+    const candidate = primaryCandidate(prepared);
     check(
       "candidate emits new column before constraints",
-      prepared.candidate.candidateContent.includes(
+      candidate.candidateContent.includes(
         "test_column_erdforge INT NULL, -- added by verify:p3",
       ),
     );
     check(
       "candidate differs from on-disk source",
-      prepared.candidate.candidateContent !== prepared.candidate.originalContent,
+      candidate.candidateContent !== candidate.originalContent,
     );
 
     const mutated = applyAddColumnToModel(model, params);
@@ -472,13 +483,14 @@ function runRemoveColumnChecks(model: ReturnType<typeof buildProjectModel>["mode
 
   const prepared = prepareRemoveColumn(model, params);
   if (checkPrepareOk("remove column candidate builds", prepared)) {
+    const candidate = primaryCandidate(prepared);
     check(
       "candidate omits removed column",
-      !prepared.candidate.candidateContent.includes("last_modified_user_id"),
+      !candidate.candidateContent.includes("last_modified_user_id"),
     );
     check(
       "candidate differs from on-disk source",
-      prepared.candidate.candidateContent !== prepared.candidate.originalContent,
+      candidate.candidateContent !== candidate.originalContent,
     );
   }
 
@@ -511,6 +523,129 @@ function runRemoveColumnChecks(model: ReturnType<typeof buildProjectModel>["mode
     prepareRemoveColumn(model, {
       ...params,
       columnName: "not_a_column",
+    }),
+  );
+}
+
+function runRenameColumnChecks(model: ReturnType<typeof buildProjectModel>["model"]): void {
+  const simpleParams = {
+    tableKey: "dbo.pr_buying_season",
+    oldName: "last_modified_user_id",
+    newName: "last_modified_by_user_id",
+  };
+
+  const simplePrepared = prepareRenameColumn(model, simpleParams);
+  if (checkPrepareOk("simple rename candidate builds", simplePrepared)) {
+    check("simple rename touches one file", simplePrepared.candidates.length === 1);
+    const candidate = primaryCandidate(simplePrepared);
+    check(
+      "candidate emits renamed column",
+      candidate.candidateContent.includes("last_modified_by_user_id"),
+    );
+    check(
+      "candidate omits old column name",
+      !candidate.candidateContent.includes("last_modified_user_id"),
+    );
+    check(
+      "candidate differs from on-disk source",
+      candidate.candidateContent !== candidate.originalContent,
+    );
+  }
+
+  const pkParams = {
+    tableKey: "dbo.pr_port",
+    oldName: "port_id",
+    newName: "port_identifier",
+  };
+
+  const pkPrepared = prepareRenameColumn(model, pkParams);
+  if (checkPrepareOk("PK rename with inbound FK candidate builds", pkPrepared)) {
+    check("PK rename touches owning and referencing files", pkPrepared.candidates.length === 2);
+    check(
+      "owning table candidate listed first",
+      pkPrepared.candidates[0]?.sourceFile.includes("pr_port") ?? false,
+    );
+
+    const portCandidate = pkPrepared.candidates.find((c) => c.sourceFile.includes("pr_port"));
+    const headerCandidate = pkPrepared.candidates.find((c) =>
+      c.sourceFile.includes("pr_procurement_header"),
+    );
+    check(
+      "owning table emits renamed PK column",
+      portCandidate?.candidateContent.includes("port_identifier INT NOT NULL IDENTITY") ?? false,
+    );
+    check(
+      "owning table PK constraint uses new name",
+      portCandidate?.candidateContent.includes(
+        "CONSTRAINT PK_pr_port PRIMARY KEY (port_identifier)",
+      ) ?? false,
+    );
+    check(
+      "referencing table updates inbound FK REFERENCES",
+      headerCandidate?.candidateContent.includes(
+        "REFERENCES pr_port (port_identifier)",
+      ) ?? false,
+    );
+    check(
+      "all candidates differ from on-disk source",
+      pkPrepared.candidates.every(
+        (candidate) => candidate.candidateContent !== candidate.originalContent,
+      ),
+    );
+  }
+
+  const localFkParams = {
+    tableKey: "dbo.pr_procurement_header",
+    oldName: "port_of_load_id",
+    newName: "load_port_id",
+  };
+
+  const localFkPrepared = prepareRenameColumn(model, localFkParams);
+  if (checkPrepareOk("local FK column rename candidate builds", localFkPrepared)) {
+    check("local FK rename touches one file", localFkPrepared.candidates.length === 1);
+    const candidate = primaryCandidate(localFkPrepared);
+    check(
+      "candidate emits renamed local FK column",
+      candidate.candidateContent.includes("load_port_id INT NULL"),
+    );
+    check(
+      "candidate FK constraint uses new local column name",
+      candidate.candidateContent.includes(
+        "CONSTRAINT FK_pr_procurement_header_pr_port_of_load FOREIGN KEY (load_port_id) REFERENCES pr_port (port_id)",
+      ),
+    );
+  }
+
+  checkPrepareRejected(
+    "duplicate new name rejected",
+    prepareRenameColumn(model, {
+      ...simpleParams,
+      newName: "buying_season_name",
+    }),
+  );
+
+  checkPrepareRejected(
+    "missing column rejected",
+    prepareRenameColumn(model, {
+      ...simpleParams,
+      oldName: "not_a_column",
+    }),
+  );
+
+  checkPrepareRejected(
+    "read-only owning table rejected",
+    prepareRenameColumn(model, {
+      tableKey: "dbo.InvBuyer",
+      oldName: "Buyer",
+      newName: "BuyerRenamed",
+    }),
+  );
+
+  checkPrepareRejected(
+    "same old and new name rejected",
+    prepareRenameColumn(model, {
+      ...simpleParams,
+      newName: simpleParams.oldName,
     }),
   );
 }

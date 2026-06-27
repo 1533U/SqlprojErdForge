@@ -8,12 +8,19 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 ## [Unreleased]
 
 ### Changed
+- **Docs synced** for Phase 3 progress: STATUS, backlog (`P3-8` partial done), README
+  (`verify:p3`), roadmap (ops 1–2 shipped), and architecture (edit layer + parser ADR-0009).
 - **Phase 3 refactor:** deduplicated edit pipeline (`buildFileEditCandidate`, per-op mutation
   helpers, shared `validateEditableTable` / `findColumn` / `splitTableKey`), unified host/webview
   protocol types in `src/protocol/`, generic `handlePrepareEdit` in the extension panel, grouped
   webview edit session state, and slimmer `verify:p3` helpers in `src/cli.ts`. Behavior unchanged.
 
 ### Added
+- **Phase 3 — rename column** (`P3-3`): webview **Rename column** mode (column pick → new name
+  → preview); edit op in `src/edits/renameColumn.ts` propagates renames to PK/unique/FK local
+  columns, PERIOD bounds, and inbound `REFERENCES` across files; multi-file sequential diff
+  preview (`1/N`); `EditValidationResult` now returns `candidates[]`; `npm run verify:p3`
+  extended.
 - **Phase 3 — add / remove column** (`P3-2`): webview **Add column** (table header → name/type/
   nullable/description → preview) and **Remove column** (column pick → preview); edit ops in
   `src/edits/addColumn.ts` and `src/edits/removeColumn.ts` with PK/FK/inbound-FK guardrails on

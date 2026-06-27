@@ -60,9 +60,10 @@ a second authoritative store of schema data that could drift from the files.
   member/table (see [`04-comment-model.md`](04-comment-model.md)).
 - **Fails loudly**: anything outside the subset becomes a diagnostic with file + line,
   never a silent drop or misread.
-- Implementation options: hand-written recursive-descent over the small DDL grammar, or
-  a grammar via [Chevrotain](https://chevrotain.io/). Decision deferred to the Phase 0
-  spike; recursive-descent is the leading candidate for a subset this small.
+- Hand-written recursive-descent over the small DDL grammar
+  ([ADR-0009](decisions/ADR-0009-parser-recursive-descent.md)); implemented in
+  [`src/parser.ts`](../src/parser.ts) with trivia-preserving tokenizer
+  ([`src/tokenizer.ts`](../src/tokenizer.ts)).
 
 ### 3. Schema model (in-memory)
 - Plain TypeScript data structures (see [`05-data-model.md`](05-data-model.md)).
@@ -95,6 +96,13 @@ a second authoritative store of schema data that could drift from the files.
 - An edit intent from the diagram mutates a copy of the model, the emitter regenerates the
   affected file(s), and the change is shown as a **diff preview** the user confirms or
   discards before it is applied via `WorkspaceEdit`. See [`06-edit-ux.md`](06-edit-ux.md).
+- **Implementation (Phase 3):** per-op modules under [`src/edits/`](../src/edits/) follow
+  validate → clone → `apply*Mutation` → [`buildFileEditCandidate`](../src/edits/candidate.ts).
+  Shared table/column checks live in [`memberChecks.ts`](../src/edits/memberChecks.ts); FK
+  naming in [`naming.ts`](../src/edits/naming.ts). The extension panel uses generic
+  [`handlePrepareEdit`](../src/extension/erdPanel.ts); diff preview in
+  [`diffPreview.ts`](../src/extension/diffPreview.ts). Host/webview message types are shared
+  via [`src/protocol/`](../src/protocol/). Headless validation: `npm run verify:p3`.
 
 ## Tech stack and rationale
 

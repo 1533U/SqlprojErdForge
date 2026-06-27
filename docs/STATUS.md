@@ -4,11 +4,13 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-27
-**Current phase:** Phase 3 in progress — add/remove column landed (P3-2)
-**Overall state:** Phase 0–2 complete. Phase 3: **Add FK** (`P3-1`), **Add/remove column** (`P3-2`),
-and single-file diff preview (`P3-8` partial) are done, backed by `src/edits/` and
-`npm run verify:p3`. Remaining Phase 3 ops (rename, type change, table add/drop/rename) not
-started. Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
+**Current phase:** Phase 3 in progress — next: change column type (`P3-4`)
+**Overall state:** Phase 0–2 complete. Phase 3: **Add FK** (`P3-1`), **Add/remove column**
+(`P3-2`), **Rename column** (`P3-3`), **single-file diff preview + Apply/Discard**
+(`P3-8` partial), and the **edit-pipeline refactor** are landed and verified via
+`npm run verify:p3`. Remaining Phase 3 ops (type change, table add/drop/rename) not started.
+Multi-file rename uses sequential diff preview (Apply advances 1/N); full Refactor Preview
+deferred to `P4-3`. Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
 
 ## Done
 
@@ -73,14 +75,30 @@ started. Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
   - Webview **Add column** (table header → form → preview) and **Remove column** (column pick →
     preview) modes in [`webview/src/App.tsx`](../webview/src/App.tsx).
   - `npm run verify:p3` extended with add/remove column headless checks.
+- **Phase 3 — edit pipeline refactor** (2026-06-27):
+  - Shared flow: validate → clone → `apply*Mutation` →
+    [`buildFileEditCandidate`](../src/edits/candidate.ts).
+  - Shared checks in [`memberChecks.ts`](../src/edits/memberChecks.ts); FK naming in
+    [`naming.ts`](../src/edits/naming.ts).
+  - Host/webview protocol unified in [`src/protocol/`](../src/protocol/) (webview re-exports via
+    [`webview/src/types.ts`](../webview/src/types.ts)).
+  - Generic [`handlePrepareEdit`](../src/extension/erdPanel.ts) in the extension panel;
+    grouped edit session state in the webview. All exit criteria still green.
+- **Phase 3 — rename column** (`P3-3`, 2026-06-27):
+  - [`src/edits/renameColumn.ts`](../src/edits/renameColumn.ts): rename in owning table;
+    propagate to PK/unique/FK local columns, PERIOD bounds, and inbound `REFERENCES` across
+    files. [`buildFileEditCandidates`](../src/edits/candidate.ts) for multi-file edits.
+  - Webview **Rename column** mode: column pick → new name → preview; multi-file edits use
+    sequential diff preview (`1/N`) in [`diffPreview.ts`](../src/extension/diffPreview.ts).
+  - `EditValidationResult` now returns `candidates[]`; `npm run verify:p3` extended.
 
 ## In progress
 
-- **Phase 3** — remaining edit ops (`P3-3`…`P3-7`); multi-file Refactor Preview deferred.
+- _None._ Next session starts **P3-4** (change column type / nullability).
 
 ## Next up (immediate — start here next session)
 
-1. **P3-3** — rename column (multi-file FK updates).
+1. **P3-4** — change column type / nullability.
 2. Pin the **exact canonical formatting rules** (`P0-15`).
 3. Triage real-project coverage gaps (`P0-14`).
 

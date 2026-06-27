@@ -10,6 +10,7 @@ export interface ColumnRowEditState {
   isFkTarget: boolean;
   isRemoveTarget: boolean;
   isRemoveBlocked: boolean;
+  isRenameTarget: boolean;
 }
 
 export function computeColumnRowEditState(
@@ -17,6 +18,7 @@ export function computeColumnRowEditState(
   readOnly: boolean,
   fkSource: ColumnRef | undefined,
   removeColumnTarget: ColumnRef | undefined,
+  renameColumnTarget: ColumnRef | undefined,
   tableKey: string,
   column: GraphColumn,
 ): ColumnRowEditState {
@@ -33,6 +35,10 @@ export function computeColumnRowEditState(
     editMode === "removeColumn" &&
     removeColumnTarget?.tableKey === tableKey &&
     removeColumnTarget.columnName === column.name;
+  const isRenameTarget =
+    editMode === "renameColumn" &&
+    renameColumnTarget?.tableKey === tableKey &&
+    renameColumnTarget.columnName === column.name;
   const isRemoveBlocked =
     editMode === "removeColumn" && (column.isPrimaryKey || column.isForeignKey);
   const isFkSelectable =
@@ -41,12 +47,14 @@ export function computeColumnRowEditState(
     (fkSource == null ? !readOnly : isFkTarget || isFkSource);
   const isRemoveSelectable =
     editMode === "removeColumn" && !readOnly && !isRemoveBlocked;
+  const isRenameSelectable = editMode === "renameColumn" && !readOnly;
 
   return {
-    isSelectable: isFkSelectable || isRemoveSelectable,
+    isSelectable: isFkSelectable || isRemoveSelectable || isRenameSelectable,
     isFkSource,
     isFkTarget,
     isRemoveTarget,
     isRemoveBlocked,
+    isRenameTarget,
   };
 }

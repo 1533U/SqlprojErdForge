@@ -103,3 +103,45 @@ export function splitTableKey(key: string): [string, string] {
   if (dot === -1) return ["dbo", key];
   return [key.slice(0, dot), key.slice(dot + 1)];
 }
+
+export interface InboundFkReference {
+  fromTableKey: string;
+  constraintName: string;
+}
+
+export function findInboundFkReferences(
+  model: ProjectModel,
+  tableKey: string,
+  columnName: string,
+): InboundFkReference[] {
+  const [schema, tableName] = splitTableKey(tableKey);
+  const refs: InboundFkReference[] = [];
+
+  for (const [fromKey, fromTable] of model.tables) {
+    for (const member of fromTable.members) {
+      if (member.kind !== "constraint" || member.constraintType !== "foreignKey") continue;
+      const refSchema = member.references.schema ?? "dbo";
+      if (refSchema !== schema || member.references.table !== tableName) continue;
+      if (member.references.columns.includes(columnName)) {
+        refs.push({ fromTableKey: fromKey, constraintName: member.name });
+      }
+    }
+  }
+
+  return refs;
+}
+
+export function replaceColumnNameInList(
+  columns: string[],
+  oldName: string,
+  newName: string,
+): boolean {
+  let changed = false;
+  for (let i = 0; i < columns.length; i++) {
+    if (columns[i] === oldName) {
+      columns[i] = newName;
+      changed = true;
+    }
+  }
+  return changed;
+}

@@ -75,6 +75,7 @@ function payloadToFlow(
         fkSource: edit.fkSource,
         addColumnTableKey: edit.addColumnTableKey,
         removeColumnTarget: edit.removeColumnTarget,
+        renameColumnTarget: edit.renameColumnTarget,
         onColumnSelect,
         onTableSelect,
       },
@@ -111,6 +112,8 @@ function EditBanner({
   onConfirmFk,
   onConfirmAddColumn,
   onConfirmRemoveColumn,
+  onConfirmRenameColumn,
+  onRenameNewNameChange,
   onCancel,
 }: {
   edit: EditSessionState;
@@ -118,6 +121,8 @@ function EditBanner({
   onConfirmFk: () => void;
   onConfirmAddColumn: () => void;
   onConfirmRemoveColumn: () => void;
+  onConfirmRenameColumn: () => void;
+  onRenameNewNameChange: (name: string) => void;
   onCancel: () => void;
 }) {
   if (edit.mode === "none") return null;
@@ -223,6 +228,29 @@ function EditBanner({
         confirmEnabled = true;
       }
       break;
+    case "renameColumn":
+      if (edit.renameColumnTarget == null) {
+        body = <span>Click a column to rename.</span>;
+      } else {
+        body = (
+          <span className="erdforge-edit-banner__form">
+            Rename <strong>{edit.renameColumnTarget.tableKey}.{edit.renameColumnTarget.columnName}</strong>
+            <label>
+              New name
+              <input
+                type="text"
+                value={edit.renameNewName}
+                onChange={(event) => onRenameNewNameChange(event.target.value)}
+                placeholder="new_column_name"
+              />
+            </label>
+          </span>
+        );
+        confirmLabel = "Preview rename";
+        onConfirm = onConfirmRenameColumn;
+        confirmEnabled = edit.renameNewName.trim().length > 0;
+      }
+      break;
     default:
       body = null;
       break;
@@ -256,6 +284,8 @@ function ErdCanvas({
   onConfirmFk,
   onConfirmAddColumn,
   onConfirmRemoveColumn,
+  onConfirmRenameColumn,
+  onRenameNewNameChange,
   onCancelEdit,
 }: {
   payload: GraphPayload;
@@ -267,6 +297,8 @@ function ErdCanvas({
   onConfirmFk: () => void;
   onConfirmAddColumn: () => void;
   onConfirmRemoveColumn: () => void;
+  onConfirmRenameColumn: () => void;
+  onRenameNewNameChange: (name: string) => void;
   onCancelEdit: () => void;
 }) {
   const initial = useMemo(
@@ -308,6 +340,8 @@ function ErdCanvas({
         onConfirmFk={onConfirmFk}
         onConfirmAddColumn={onConfirmAddColumn}
         onConfirmRemoveColumn={onConfirmRemoveColumn}
+        onConfirmRenameColumn={onConfirmRenameColumn}
+        onRenameNewNameChange={onRenameNewNameChange}
         onCancel={onCancelEdit}
       />
       <ReactFlow
@@ -356,6 +390,14 @@ export function App() {
       ...current,
       message: undefined,
       newColumn: { ...current.newColumn, ...patch },
+    }));
+  }, []);
+
+  const onRenameNewNameChange = useCallback((name: string) => {
+    setEdit((current) => ({
+      ...current,
+      message: undefined,
+      renameNewName: name,
     }));
   }, []);
 
@@ -435,6 +477,18 @@ export function App() {
           };
         }
 
+        if (current.mode === "renameColumn") {
+          if (table.readOnly) {
+            return { ...current, message: `${tableKey} is read-only.` };
+          }
+          return {
+            ...current,
+            message: undefined,
+            renameColumnTarget: { tableKey, columnName },
+            renameNewName: "",
+          };
+        }
+
         return { ...current, message: undefined };
       });
     },
@@ -485,6 +539,23 @@ export function App() {
         intent: {
           tableKey: current.removeColumnTarget.tableKey,
           columnName: current.removeColumnTarget.columnName,
+        },
+      });
+      return { ...current, message: undefined };
+    });
+  }, []);
+
+  const onConfirmRenameColumn = useCallback(() => {
+    setEdit((current) => {
+      if (!current.renameColumnTarget) return current;
+      const newName = current.renameNewName.trim();
+      if (!newName) return current;
+      vscode.postMessage({
+        type: "renameColumn",
+        intent: {
+          tableKey: current.renameColumnTarget.tableKey,
+          oldName: current.renameColumnTarget.columnName,
+          newName,
         },
       });
       return { ...current, message: undefined };
@@ -572,6 +643,13 @@ export function App() {
         >
           {edit.mode === "removeColumn" ? "Removing column…" : "Remove column"}
         </button>
+        <button
+          type="button"
+          className={`erdforge-btn${edit.mode === "renameColumn" ? " erdforge-btn--active" : ""}`}
+          onClick={() => startEditMode("renameColumn")}
+        >
+          {edit.mode === "renameColumn" ? "Renaming column…" : "Rename column"}
+        </button>
       </header>
       <div className="erdforge-canvas">
         <ReactFlowProvider>
@@ -585,6 +663,8 @@ export function App() {
             onConfirmFk={onConfirmFk}
             onConfirmAddColumn={onConfirmAddColumn}
             onConfirmRemoveColumn={onConfirmRemoveColumn}
+            onConfirmRenameColumn={onConfirmRenameColumn}
+            onRenameNewNameChange={onRenameNewNameChange}
             onCancelEdit={cancelEditMode}
           />
         </ReactFlowProvider>

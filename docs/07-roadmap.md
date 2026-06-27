@@ -61,16 +61,21 @@ criterion so we never build UI on top of an unproven foundation.
 **Goal:** edit schema through the diagram with reviewable diffs
 ([`06-edit-ux.md`](06-edit-ux.md)).
 
+**Progress (2026-06-27):** ops 1–3 and single-file diff preview are shipped; edit layer in
+`src/edits/` with headless checks via `npm run verify:p3`. Multi-file rename uses sequential
+diff preview; full Refactor Preview deferred to Phase 4 (`P4-3`).
+
 Order of operations:
-1. Add foreign key.
-2. Add / remove column.
-3. Rename column (multi-file FK updates).
-4. Change column type / nullability.
+1. Add foreign key — **done** (`P3-1`).
+2. Add / remove column — **done** (`P3-2`).
+3. Rename column (multi-file FK updates) — **done** (`P3-3`).
+4. Change column type / nullability — **next** (`P3-4`).
 5. Add table (new file + layout entry).
 6. Drop table (delete file, warn on inbound FKs).
 7. Rename table (rename file, update FKs, migrate layout key).
 
-Each ships with the diff-preview Apply/Discard flow.
+Each ships with the diff-preview Apply/Discard flow (single-file today; multi-file via
+Refactor Preview in Phase 4).
 
 **Exit criteria (per op):** the resulting `.sql` diff is minimal, correct,
 comment/order-preserving, and the project still builds to a DACPAC in CI.

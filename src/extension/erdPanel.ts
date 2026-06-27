@@ -13,6 +13,7 @@ import { buildProjectModel } from "../project.ts";
 import { prepareAddColumn } from "../edits/addColumn.ts";
 import { prepareAddForeignKey, suggestForeignKeyName } from "../edits/addForeignKey.ts";
 import { prepareRemoveColumn } from "../edits/removeColumn.ts";
+import { prepareRenameColumn } from "../edits/renameColumn.ts";
 import type { EditValidationResult } from "../edits/types.ts";
 import { ErdDiagnostics } from "./diagnostics.ts";
 import { type DiffPreviewController } from "./diffPreview.ts";
@@ -190,6 +191,14 @@ export class ErdPanel {
         );
         break;
       }
+      case "renameColumn": {
+        const intent = message.intent;
+        void this.handlePrepareEdit(
+          (model) => prepareRenameColumn(model, intent),
+          `Rename column ${intent.tableKey}.${intent.oldName} → ${intent.newName}`,
+        );
+        break;
+      }
       default:
         break;
     }
@@ -211,7 +220,7 @@ export class ErdPanel {
       return;
     }
 
-    await this.diffPreview.show(result.candidate, title);
+    await this.diffPreview.show(result.candidates, title);
     this.postMessage({ type: "editResult", ok: true });
   }
 

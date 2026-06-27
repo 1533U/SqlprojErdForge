@@ -261,6 +261,10 @@ body,
   background: color-mix(in srgb, var(--vscode-errorForeground, #f48771) 22%, transparent);
 }
 
+.table-node__row--rename-target {
+  background: color-mix(in srgb, var(--vscode-editorWarning-foreground, #cca700) 22%, transparent);
+}
+
 .table-node__description {
   padding: 0 10px 4px 18px;
   font-size: 10px;

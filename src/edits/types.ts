@@ -25,6 +25,12 @@ export interface RemoveColumnParams {
   columnName: string;
 }
 
+export interface RenameColumnParams {
+  tableKey: string;
+  oldName: string;
+  newName: string;
+}
+
 export interface FileEditCandidate {
   /** Absolute path to the on-disk .sql file. */
   absPath: string;
@@ -39,5 +45,5 @@ export interface FileEditCandidate {
 }
 
 export type EditValidationResult =
-  | { ok: true; candidate: FileEditCandidate }
+  | { ok: true; candidates: FileEditCandidate[] }
   | { ok: false; message: string };

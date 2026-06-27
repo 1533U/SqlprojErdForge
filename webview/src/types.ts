@@ -12,6 +12,7 @@ export type {
   AddForeignKeyIntent,
   HostToWebviewMessage,
   RemoveColumnIntent,
+  RenameColumnIntent,
   WebviewToHostMessage,
 } from "../../src/protocol/messages";
 
@@ -22,7 +23,7 @@ export interface ColumnRef {
   columnName: string;
 }
 
-export type EditMode = "none" | "addFk" | "addColumn" | "removeColumn";
+export type EditMode = "none" | "addFk" | "addColumn" | "removeColumn" | "renameColumn";
 
 export interface NewColumnDraft {
   name: string;
@@ -44,6 +45,8 @@ export interface EditSessionState {
   fkTarget: ColumnRef | undefined;
   addColumnTableKey: string | undefined;
   removeColumnTarget: ColumnRef | undefined;
+  renameColumnTarget: ColumnRef | undefined;
+  renameNewName: string;
   newColumn: NewColumnDraft;
   message: string | undefined;
 }
@@ -54,6 +57,8 @@ export const initialEditSession = (): EditSessionState => ({
   fkTarget: undefined,
   addColumnTableKey: undefined,
   removeColumnTarget: undefined,
+  renameColumnTarget: undefined,
+  renameNewName: "",
   newColumn: defaultNewColumnDraft(),
   message: undefined,
 });
@@ -65,6 +70,8 @@ export function resetEditSelection(session: EditSessionState): EditSessionState 
     fkTarget: undefined,
     addColumnTableKey: undefined,
     removeColumnTarget: undefined,
+    renameColumnTarget: undefined,
+    renameNewName: "",
     newColumn: defaultNewColumnDraft(),
     message: undefined,
   };
