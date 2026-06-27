@@ -31,4 +31,6 @@ validate → clone model (remove table) → build candidates → sequential diff
 - Happy path on `dbo.pr_shipping_type` (sql + sqlproj + layout candidates).
 - Reject read-only `dbo.InvBuyer`, missing table.
 
-**Next after P3-6:** P3-7 rename table.
+**Next after P3-6:** P3-7 rename table — **done** (see [`STATUS.md`](STATUS.md)).
+
+> Archived implementation plan; kept as pipeline reference for table lifecycle edits (add/drop/rename).

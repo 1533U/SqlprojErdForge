@@ -26,7 +26,7 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 | P0-6 | Idempotency tests incl. all 4 comment slots + footer fallback | done | fixed point green on full corpus |
 | P0-7 | Diagnostics for unsupported constructs | done | loud diagnostics; no crashes |
 | P0-14 | Triage real-project coverage gaps (proc/view files, post-`GO` objects, extra modifiers) | todo | from P0-13; informs allowlist + discovery file-role detection |
-| P0-15 | Pin exact canonical formatting rules (indent/alignment/casing/bracketing) | todo | flows from D1; spike uses a placeholder style |
+| P0-15 | Pin exact canonical formatting rules (indent/alignment/casing/bracketing) | done | C4.1–C4.8 in `03-sql-conventions.md`; ADR-0013 |
 
 ## Phase 1 — Read-only live ERD
 
@@ -58,14 +58,18 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 | P3-5 | Add table (new file + layout entry) | done | webview Add table mode; sqlproj + layout in lockstep |
 | P3-6 | Drop table (delete file, warn on inbound FKs) | done | webview Drop table mode; sqlproj + layout in lockstep |
 | P3-7 | Rename table (file + FKs + layout key migration) | done | eighth edit op; sequential diff preview |
-| P3-8 | Diff-preview Apply/Discard pipeline | done (partial) | single-file diff + Apply/Discard shipped with P3-1…P3-2; multi-file → P4-3 |
+| P3-8 | Diff-preview Apply/Discard pipeline | done (partial) | single-file + sequential multi-file (`1/N`); atomic Refactor Preview → `P4-3` |
+
+**Phase 3 exit:** all eight ops registered, wired host/webview/protocol, `npm run verify:p3` green.
 
 ## Phase 4 — Guardrails & polish
 
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| P4-1 | Canonical formatter + CI format check | todo | enforce C4/C5 |
+| P0-15 | Pin exact canonical formatting rules (indent/alignment/casing/bracketing) | done | C4.1–C4.8; ADR-0013 |
+| P4-1 | Canonical formatter + CI format check | todo | enforce C4/C5; match `src/emitter.ts` |
 | P4-2 | DACPAC build in CI (correctness backstop) | todo | |
-| P4-3 | Refactor Preview for multi-file edits | todo | |
+| P4-3 | Refactor Preview for multi-file edits | todo | atomic apply; addresses P3-8 partial gaps |
 | P4-4 | Conflict handling on concurrent file changes | todo | |
 | P4-5 | Edit comment text on the diagram | todo | |
+| P4-6 | Group webview edit toolbar (Edit… menu) | todo | eight header buttons today |

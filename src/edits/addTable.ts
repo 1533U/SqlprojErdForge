@@ -3,7 +3,6 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, sep } from "node:path";
 
 import { emitTable } from "../emitter.ts";
 import {
@@ -13,7 +12,7 @@ import {
   readLayout,
 } from "../layout.ts";
 import type { Column, PrimaryKeyConstraint, ProjectModel, Table } from "../model.ts";
-import { contentRevision } from "./paths.ts";
+import { contentRevision, includeAbsPath } from "./paths.ts";
 import { cloneProjectModel } from "./cloneModel.ts";
 import {
   tableKeyFromParts,
@@ -77,7 +76,7 @@ export function validateAddTable(
   }
 
   const normalized = normalizeAddTableParams(model, params);
-  const absPath = tableAbsPathForInclude(model.projectPath, normalized.sourceFile);
+  const absPath = includeAbsPath(model.projectPath, normalized.sourceFile);
   if (existsSync(absPath)) {
     return {
       ok: false,
@@ -178,7 +177,7 @@ function buildAddTableCandidates(
   const tableKey = tableKeyFromParts(params.schema, params.tableName);
   const candidates: FileEditCandidate[] = [];
 
-  const sqlAbsPath = tableAbsPathForInclude(model.projectPath, table.sourceFile);
+  const sqlAbsPath = includeAbsPath(model.projectPath, table.sourceFile);
   candidates.push({
     absPath: sqlAbsPath,
     sourceFile: table.sourceFile,
@@ -227,9 +226,4 @@ function buildAddTableCandidates(
   });
 
   return { ok: true, candidates };
-}
-
-function tableAbsPathForInclude(projectPath: string, include: string): string {
-  const relative = include.replace(/\\/g, sep).replace(/\//g, sep);
-  return join(dirname(projectPath), relative);
 }

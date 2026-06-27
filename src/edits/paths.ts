@@ -8,7 +8,12 @@ import { dirname, join, sep } from "node:path";
 import type { Table } from "../model.ts";
 
 export function tableAbsPath(projectPath: string, table: Table): string {
-  const relative = table.sourceFile.replace(/\\/g, sep).replace(/\//g, sep);
+  return includeAbsPath(projectPath, table.sourceFile);
+}
+
+/** Absolute path for a `.sqlproj` build-item include (not yet on the model). */
+export function includeAbsPath(projectPath: string, include: string): string {
+  const relative = include.replace(/\\/g, sep).replace(/\//g, sep);
   return join(dirname(projectPath), relative);
 }
 

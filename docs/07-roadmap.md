@@ -61,9 +61,9 @@ criterion so we never build UI on top of an unproven foundation.
 **Goal:** edit schema through the diagram with reviewable diffs
 ([`06-edit-ux.md`](06-edit-ux.md)).
 
-**Progress (2026-06-27):** ops 1–3 and single-file diff preview are shipped; edit layer in
-`src/edits/` with headless checks via `npm run verify:p3`. Multi-file rename uses sequential
-diff preview; full Refactor Preview deferred to Phase 4 (`P4-3`).
+**Progress (2026-06-27):** **Phase 3 complete.** All eight edit ops shipped; edit layer in
+`src/edits/` with headless checks via `npm run verify:p3`. Multi-file edits use sequential
+diff preview (`1/N`); atomic Refactor Preview deferred to Phase 4 (`P4-3`).
 
 Order of operations:
 1. Add foreign key — **done** (`P3-1`).
@@ -74,11 +74,11 @@ Order of operations:
 6. Drop table (delete file, warn on inbound FKs) — **done** (`P3-6`).
 7. Rename table (rename file, update FKs, migrate layout key) — **done** (`P3-7`).
 
-Each ships with the diff-preview Apply/Discard flow (single-file today; multi-file via
-Refactor Preview in Phase 4).
+Each ships with diff-preview Apply/Discard (single-file immediate; multi-file sequential
+`1/N` today — atomic Refactor Preview in Phase 4 `P4-3`).
 
-**Exit criteria (per op):** the resulting `.sql` diff is minimal, correct,
-comment/order-preserving, and the project still builds to a DACPAC in CI.
+**Exit criteria (Phase 3):** met — all eight ops pass `npm run verify:p3`; host/webview/protocol
+registry in sync; per-op validate → clone → mutate → candidates pipeline.
 
 ## Phase 4 — Guardrails & polish
 
@@ -118,7 +118,7 @@ comment/order-preserving, and the project still builds to a DACPAC in CI.
 - **D2 — Syspro mirror tables (addresses R3):** treat as read-only, exclude entirely, or
   allow editing? Leaning read-only/excluded.
 - Parser approach: hand-written recursive-descent vs Chevrotain grammar.
-- Exact canonical formatting rules (indentation width, alignment, casing) — flows from D1.
+- ~~Exact canonical formatting rules~~ — settled in C4.1–C4.8 / [ADR-0013](decisions/ADR-0013-canonical-format-rules.md) (`P0-15`).
 - Whether `leadingComments` also render on the diagram or only `trailingComment`.
 - Whether the layout sidecar is committed by default for every team/repo.
 

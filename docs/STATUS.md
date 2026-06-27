@@ -4,20 +4,19 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-27
-**Current phase:** Phase 3 complete — next: Phase 4 guardrails (`P4-1`…)
-**Overall state:** Phase 0–2 complete. Phase 3: all eight edit ops shipped — **Add FK** (`P3-1`),
-**Add/remove column** (`P3-2`), **Rename column** (`P3-3`), **Change column type/nullability**
-(`P3-4`), **Add table** (`P3-5`), **Drop table** (`P3-6`), **Rename table** (`P3-7`), and
-**single-file diff preview + Apply/Discard** (`P3-8` partial), plus the **edit-pipeline refactor**.
-All verified via `npm run verify:p3`. Multi-file edits use sequential diff preview (`1/N`); full
-Refactor Preview deferred to `P4-3`. Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
+**Current phase:** Phase 4 started — canonical format rules pinned (`P0-15`); next: `P4-1`
+**Overall state:** Phase 0–2 complete. **Phase 3 complete:** all eight edit ops shipped and
+verified via `npm run verify:p3`. Single-file diff preview + Apply/Discard is production-ready;
+multi-file edits use sequential diff preview (`1/N`) — partial completion and non-atomic
+rename-on-disk are known gaps tracked for `P4-3`. Two Phase 0 follow-ups remain open
+(`P0-14`, `P0-15`).
 
 ## Done
 
 - Project scope, architecture, and tech stack defined ([`docs/`](.)).
 - SQL conventions, comment model, and data model specified.
 - Edit/apply UX and phased roadmap documented.
-- 12 ADRs recorded for the key decisions (ADR-0001…0012).
+- 13 ADRs recorded for the key decisions (ADR-0001…0013).
 - Project-management scaffolding in place (AGENTS.md, STATUS, backlog, CHANGELOG).
 - **Test fixture corpus** curated from the example `OSConnectWeylandtsDB` project
   ([`test/fixtures/`](../test/fixtures/)) — clean extension tables, a Syspro mirror table,
@@ -125,15 +124,23 @@ Refactor Preview deferred to `P4-3`. Two Phase 0 follow-ups remain open (`P0-14`
   - Webview **Rename table** mode: table header pick → schema + new name form → sequential diff
     preview (delete old file → create new file → inbound FK updates → sqlproj → layout).
   - Registered as eighth op; `npm run verify:p3` extended.
+- **Phase 3 close-out** (2026-06-27): edit-pipeline audit green; `includeAbsPath` consolidated
+  in `src/edits/paths.ts`; inbound-FK lookup deduped; constraint names intentionally unchanged
+  on rename table (same as rename column); multi-file apply UX gaps documented below.
+- **Phase 4 — canonical format rules** (`P0-15`, 2026-06-27):
+  - Pinned C4.1–C4.8 in [`docs/03-sql-conventions.md`](03-sql-conventions.md) (4-space indent,
+    trailing commas, uppercase keywords, unbracketed simple identifiers, no alignment).
+  - [ADR-0013](decisions/ADR-0013-canonical-format-rules.md): emitter is reference implementation;
+    `P4-1` formatter must match byte-for-byte.
 
 ## In progress
 
-- _None._ Next session starts **Phase 4** (`P4-1` canonical formatter, or `P0-15` formatting rules).
+- _None._ Next session: **`P4-1`** — canonical formatter + CI format check (conformance to C4 / emitter).
 
 ## Next up (immediate — start here next session)
 
-1. **P4-1** — canonical formatter + CI format check (or pin formatting rules first: `P0-15`).
-2. Triage real-project coverage gaps (`P0-14`).
+1. **P4-1** — canonical formatter + CI format check on changed files (enforce C4/C5 per ADR-0013).
+2. Triage real-project coverage gaps (`P0-14`) — can run in parallel.
 
 > Tip: `npm run spike`, `npm run verify:p1`, `npm run verify:p3`, `npm run typecheck`,
 > `npm run compile`, then F5.
@@ -174,12 +181,22 @@ Refactor Preview deferred to `P4-3`. Two Phase 0 follow-ups remain open (`P0-14`
 
 ## Open decisions (tracked, not yet final)
 
-- Exact canonical formatting rules (indent width, alignment, keyword casing, identifier
-  bracketing policy) — flows from D1; spike uses a simple deterministic style for now.
 - **`leadingComments` on the diagram** — deferred in Phase 2 v1; only `trailingComment`
   renders today. Revisit when table header/footer descriptions ship.
 - Whether the layout sidecar is committed for every repo by default.
 - Default classification rule for read-only mirror tables (glob vs explicit list).
+- **Constraint names on rename table/column** — intentionally preserved (e.g.
+  `PK_pr_shipping_type` stays after renaming to `pr_shipment_type`). Only table/column
+  identifiers and `REFERENCES` targets update. Optional rename-constraint op deferred.
+- **Multi-file sequential diff preview (`P3-8` partial)** — each file in a multi-candidate
+  edit is applied one-at-a-time via separate `WorkspaceEdit`s, not atomically. Risks: user
+  applies step 1 then abandons (orphan sqlproj/layout vs missing file); rename table is
+  delete-then-create on disk (two steps). `FileEditCandidate` has `isNewFile` /
+  `isDeleteFile` but no paired `isRenameFile`. Mitigation today: per-step revision check +
+  user must complete the sequence or Git-revert. Proper fix: `P4-3` Refactor Preview or
+  batched atomic apply.
+- **Webview header crowding** — eight edit buttons in the toolbar; consider an **Edit…**
+  dropdown/menu (`P4-6` in backlog). Not blocking Phase 4.
 
 ## Real-project coverage gaps from the P0-13 smoke test (triage as P0-14)
 

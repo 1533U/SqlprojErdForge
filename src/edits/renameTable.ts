@@ -3,7 +3,6 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, sep } from "node:path";
 
 import { emitTable } from "../emitter.ts";
 import {
@@ -13,7 +12,7 @@ import {
   readLayout,
 } from "../layout.ts";
 import type { ProjectModel } from "../model.ts";
-import { contentRevision, readTableSource, tableAbsPath } from "./paths.ts";
+import { contentRevision, includeAbsPath, readTableSource, tableAbsPath } from "./paths.ts";
 import { cloneProjectModel } from "./cloneModel.ts";
 import {
   findInboundFkReferencesToTable,
@@ -185,7 +184,7 @@ function buildRenameTableCandidates(
     isDeleteFile: true,
   });
 
-  const newAbsPath = tableAbsPathForInclude(originalModel.projectPath, params.newSourceFile);
+  const newAbsPath = includeAbsPath(originalModel.projectPath, params.newSourceFile);
   if (existsSync(newAbsPath)) {
     return {
       ok: false,
@@ -307,7 +306,7 @@ function validateRenameTable(
   }
 
   const newSourceFile = renameTableIncludePath(tableResult.table.sourceFile, newSchema, newTableName);
-  const newAbsPath = tableAbsPathForInclude(model.projectPath, newSourceFile);
+  const newAbsPath = includeAbsPath(model.projectPath, newSourceFile);
   if (existsSync(newAbsPath)) {
     return { ok: false, message: `File already exists: ${newSourceFile}` };
   }
@@ -332,9 +331,4 @@ function validateRenameTable(
   }
 
   return { ok: true };
-}
-
-function tableAbsPathForInclude(projectPath: string, include: string): string {
-  const relative = include.replace(/\\/g, sep).replace(/\//g, sep);
-  return join(dirname(projectPath), relative);
 }

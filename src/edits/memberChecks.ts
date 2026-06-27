@@ -147,25 +147,14 @@ export function findInboundFkReferencesToTable(
   model: ProjectModel,
   tableKey: string,
 ): InboundFkReference[] {
-  const [schema, tableName] = splitTableKey(tableKey);
-  const refs: InboundFkReference[] = [];
-
-  for (const [fromKey, fromTable] of model.tables) {
-    for (const member of fromTable.members) {
-      if (member.kind !== "constraint" || member.constraintType !== "foreignKey") continue;
-      const refSchema = member.references.schema ?? "dbo";
-      if (refSchema !== schema || member.references.table !== tableName) continue;
-      refs.push({ fromTableKey: fromKey, constraintName: member.name });
-    }
-  }
-
-  return refs;
+  return findInboundFkReferences(model, tableKey);
 }
 
+/** Inbound FKs referencing a table; pass `columnName` to restrict to one referenced column. */
 export function findInboundFkReferences(
   model: ProjectModel,
   tableKey: string,
-  columnName: string,
+  columnName?: string,
 ): InboundFkReference[] {
   const [schema, tableName] = splitTableKey(tableKey);
   const refs: InboundFkReference[] = [];
@@ -175,9 +164,10 @@ export function findInboundFkReferences(
       if (member.kind !== "constraint" || member.constraintType !== "foreignKey") continue;
       const refSchema = member.references.schema ?? "dbo";
       if (refSchema !== schema || member.references.table !== tableName) continue;
-      if (member.references.columns.includes(columnName)) {
-        refs.push({ fromTableKey: fromKey, constraintName: member.name });
+      if (columnName !== undefined && !member.references.columns.includes(columnName)) {
+        continue;
       }
+      refs.push({ fromTableKey: fromKey, constraintName: member.name });
     }
   }
 

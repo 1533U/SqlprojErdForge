@@ -46,11 +46,140 @@ exactly what the emitter produces. This is the single highest-leverage conventio
 the on-disk format *is* the generator output, the tool can regenerate a whole file and the
 Git diff still shows only the lines that truly changed.
 
-The canonical formatter MAY normalize: indentation, internal spacing/alignment, keyword
-casing, and trailing commas. The canonical formatter **MUST NOT** reorder members
-(see C5).
+The canonical formatter MAY normalize: indentation, internal spacing, keyword casing, and
+trailing commas. The canonical formatter **MUST NOT** reorder members (see C5).
 
 A formatter/CI check enforces the canonical style so hand edits and tool edits converge.
+**When strategy applies:** lazy canonicalization per
+[ADR-0010](decisions/ADR-0010-formatting-strategy-lazy-canonicalization.md) — only edited
+files are rewritten; CI format checks are scoped to changed files until a bulk migration.
+
+The subsections below are the **pinned canonical format** (settled `P0-15`, 2026-06-27;
+[ADR-0013](decisions/ADR-0013-canonical-format-rules.md)). The reference implementation is
+[`src/emitter.ts`](../src/emitter.ts); `P4-1` must match it byte-for-byte on the supported
+subset.
+
+### C4.1 — File-level
+
+| Rule | Canonical |
+|---|---|
+| Line endings | LF (`\n`) only |
+| Encoding | UTF-8 |
+| Trailing newline | Exactly one `\n` at EOF |
+| Trailing whitespace | None on any line |
+| Scope | One `CREATE TABLE` per file (C2); no content after the closing `);` except table footer comments (C7) |
+
+### C4.2 — Keywords and identifiers
+
+- **Keywords** (`CREATE`, `TABLE`, `NOT`, `NULL`, `CONSTRAINT`, `PRIMARY`, `KEY`, `FOREIGN`,
+  `REFERENCES`, `UNIQUE`, `CHECK`, `IDENTITY`, `DEFAULT`, `COLLATE`, `GENERATED`, `ALWAYS`,
+  `AS`, `ROW`, `START`, `END`, `PERIOD`, `FOR`, `SYSTEM_TIME`, `ON`, `DELETE`, `UPDATE`,
+  `CASCADE`, `NO`, `ACTION`, `SET`, …): **UPPERCASE**.
+- **Data-type names** (`INT`, `VARCHAR`, `NVARCHAR`, `DATETIME2`, `DECIMAL`, …): **UPPERCASE**.
+- **Simple identifiers** — match `^[A-Za-z_][A-Za-z0-9_]*$` — are emitted **unbracketed**
+  (`dbo`, `pr_supplier`, `shipping_type_code`).
+- **Non-simple identifiers** (contain `+`, spaces, reserved words, etc.) are **bracket-quoted**:
+  `[PorMasterHdr+]`, `]]` inside a name is escaped as `]]`.
+- **Qualified names** use a dot with no surrounding spaces: `schema.table`, `[schema].[table]`
+  when either part requires brackets.
+
+Index options (`CLUSTERED`, `WITH (…)`, `ON [PRIMARY]`) are **not** part of canonical output
+(see [ADR-0012](decisions/ADR-0012-allowlist-scope.md)).
+
+### C4.3 — Table header and body layout
+
+```sql
+-- optional table header comment(s)
+CREATE TABLE schema.table_name (
+    <member line 1>,
+    <member line 2>,
+    …
+    <last member line>
+);
+-- optional table footer comment(s)
+```
+
+| Rule | Canonical |
+|---|---|
+| `CREATE TABLE` line | Keyword, qualified table name, and opening `(` on **one line** |
+| Member indent | **4 spaces** (no tabs) |
+| Members per line | **One** column, constraint, or `PERIOD` clause per line |
+| Commas | **Trailing** comma on every member **except the last** |
+| Closing | `);` on its own line — no comma before `)` |
+| Blank lines inside `( … )` | **None** — column-grouping blank lines from legacy files are dropped on emit |
+| Column alignment | **None** — no padding columns to a fixed width; single space between tokens |
+
+### C4.4 — Column lines
+
+General shape (tokens in order, omitting optional clauses):
+
+```
+<name> <dataType> [COLLATE <collation>] [NOT NULL | NULL] [IDENTITY[(seed, increment)]] [DEFAULT <expr>]
+```
+
+| Clause | Canonical |
+|---|---|
+| Nullability | Explicit `NOT NULL` or `NULL` on every non-generated column |
+| `IDENTITY` | Bare `IDENTITY` when `(1, 1)`; otherwise `IDENTITY(seed, increment)` with comma + space |
+| `DEFAULT` | `DEFAULT` + single space + expression; parenthesized calls preserved, e.g. `DEFAULT (GETUTCDATE())` |
+| `COLLATE` | Between data type and nullability: `VARCHAR(10) COLLATE Latin1_General_BIN NULL` |
+| Temporal | `GENERATED ALWAYS AS ROW START` / `… ROW END` — no nullability clause on generated columns |
+| Computed | `<name> AS <expr>` — no separate type/nullability |
+| Data-type args | Uppercase type; `(` immediately after type name; args separated by `, ` — e.g. `DECIMAL(19, 6)`, `VARCHAR(50)`, `DATETIME2(2)` |
+| Trailing comment | Space + `--` + space + text at end of member line (C7) |
+
+### C4.5 — Constraint lines
+
+All constraints are **named, table-level** (C3):
+
+```sql
+    CONSTRAINT <name> PRIMARY KEY (<col>, …),
+    CONSTRAINT <name> FOREIGN KEY (<col>, …) REFERENCES <schema>.<table> (<col>, …)
+        [ON DELETE <action>] [ON UPDATE <action>],
+    CONSTRAINT <name> UNIQUE (<col>, …),
+    CONSTRAINT <name> CHECK <expr>,
+```
+
+- Constraint and column lists: comma + space between items; simple identifiers unbracketed.
+- `ON DELETE` / `ON UPDATE` actions: `NO ACTION`, `CASCADE`, `SET NULL`, `SET DEFAULT` (uppercase).
+- `CHECK` expressions are re-emitted from the parsed model; bracket quoting inside the
+  expression follows the source tokens (no forced unbracketing).
+
+### C4.6 — `PERIOD FOR SYSTEM_TIME`
+
+Emitted as a normal member line (same indent and trailing-comma rules):
+
+```sql
+    PERIOD FOR SYSTEM_TIME (start_column, end_column),
+```
+
+### C4.7 — Comments (see also C7)
+
+| Slot | Position |
+|---|---|
+| Table header | `-- text` at column 0, before `CREATE TABLE` |
+| Member leading | `-- text` with 4-space indent, immediately above the member |
+| Member trailing | ` -- text` after the member body (before the comma, if any) |
+| Table footer | `-- text` at column 0, after `);` |
+
+Block comments (`/* … */`) inside the table body are not canonical; the parser may lift
+content into supported slots or footer trivia.
+
+### C4.8 — Normalization example
+
+Legacy hand-written style (leading commas, tabs, brackets, alignment) normalizes to:
+
+```sql
+CREATE TABLE dbo.pr_procurement_header_status (
+    procurement_header_status_id TINYINT NOT NULL,
+    procurement_header_status_code VARCHAR(20) NOT NULL,
+    procurement_header_status_desc VARCHAR(50) NOT NULL,
+    CONSTRAINT PK_procurement_header_status PRIMARY KEY (procurement_header_status_id),
+    CONSTRAINT AK_procurement_header_status_code UNIQUE (procurement_header_status_code)
+);
+```
+
+This is the fixed point: `emit(parse(emit(x)))` equals `emit(parse(x))` on the fixture corpus.
 
 ## C5 — Member order is preserved (never reordered)
 

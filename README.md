@@ -67,10 +67,11 @@ See [`docs/02-architecture.md`](docs/02-architecture.md) for the full picture an
 
 ## Status
 
-**Phase 3 in progress** — bidirectional editing: **Add FK** (`P3-1`), **add/remove column**
-(`P3-2`), **rename column** (`P3-3`, multi-file FK propagation), and single-file diff preview
-with **Apply** / **Discard** are landed; run `npm run verify:p3`. Phase 2 column comments and Phase 1 read-only ERD remain verified
-(`npm run verify:p1`). Phase 0 spike remains green. See [`docs/STATUS.md`](docs/STATUS.md).
+**Phase 3 complete** — all eight bidirectional edit ops landed and verified via
+`npm run verify:p3`. Phase 2 column comments and Phase 1 read-only ERD remain verified
+(`npm run verify:p1`). Phase 0 spike remains green. **Next:** **`P4-1`** canonical formatter
++ CI (format rules pinned in C4 / [ADR-0013](docs/decisions/ADR-0013-canonical-format-rules.md)).
+See [`docs/STATUS.md`](docs/STATUS.md).
 
 ## Quick start
 

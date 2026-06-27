@@ -67,7 +67,7 @@ export function validateAddTableForm(
 
   const tableKey = tableKeyFromParts(schema, tableName);
   if (tables.some((table) => table.key === tableKey)) {
-    return { ok: false, message: `Table ${tableKey} already exists.` };
+    return { ok: false, message: `Table ${tableKey} already exists in the project.` };
   }
 
   return { ok: true, tableKey };
@@ -121,7 +121,7 @@ export function validateRenameTableForm(
 
   const newKey = tableKeyFromParts(trimmedSchema, trimmedName);
   if (tables.some((table) => table.key === newKey)) {
-    return { ok: false, message: `Table ${newKey} already exists.` };
+    return { ok: false, message: `Table ${newKey} already exists in the project.` };
   }
 
   return { ok: true };

@@ -117,4 +117,26 @@ export function runRenameTableChecks(h: VerifyHarness, model: ProjectModel): voi
     "invalid table name rejected",
     prepareRenameTable(model, { ...params, newTableName: "bad name" }),
   );
+
+  const schemaChangeParams = {
+    tableKey: "dbo.pr_shipping_type",
+    newSchema: "ext",
+    newTableName: "pr_shipment_type",
+  };
+  const schemaChangePrepared = prepareRenameTable(model, schemaChangeParams);
+  if (h.checkPrepareOk("schema change rename candidates build", schemaChangePrepared)) {
+    const createCandidate = schemaChangePrepared.candidates.find(
+      (c) => c.isNewFile && c.sourceFile.endsWith(".sql"),
+    );
+    if (createCandidate) {
+      h.check(
+        "schema change emits CREATE TABLE with new schema",
+        createCandidate.candidateContent.includes("CREATE TABLE ext.pr_shipment_type"),
+      );
+      h.check(
+        "schema change uses renamed include path with new schema",
+        createCandidate.sourceFile.includes("ext.pr_shipment_type.sql"),
+      );
+    }
+  }
 }

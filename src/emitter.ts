@@ -1,11 +1,9 @@
 /**
- * Canonical emitter (model → .sql) for the Phase 0 spike.
+ * Canonical emitter (model → .sql).
  *
- * Produces one deterministic style (C4) and never reorders members (C5). Comments are
- * re-emitted in their four slots (ADR-0006). The exact canonical rules (alignment, casing)
- * are an open decision that flows from D1/ADR-0010; this spike uses a simple, fully
- * deterministic style (4-space indent, trailing commas, single-space separation) which is
- * sufficient to prove the idempotent fixed point.
+ * Produces the pinned canonical style (C4 / ADR-0013) and never reorders members (C5).
+ * Comments are re-emitted in their four slots (ADR-0006). See docs/03-sql-conventions.md
+ * C4.1–C4.8 for the full rule set; P4-1 formatter must match this output byte-for-byte.
  */
 
 import type {

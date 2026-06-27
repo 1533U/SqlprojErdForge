@@ -33,7 +33,14 @@ Each slice is ≤1 session; run the listed verify commands before merging.
 
 **Full gate:** `npm run typecheck && npm run compile && npm run spike && npm run verify:p1 && npm run verify:p3`
 
-## Next (post-refactor)
+## Next (post-refactor / Phase 4)
 
-- **P3-7** rename table — register as eighth edit operation.
-- Parser decomposition (`src/core/parse/`) when P0-14 allowlist work starts.
+- **P4-1** — canonical formatter + CI format check (rules pinned: [`03-sql-conventions.md`](03-sql-conventions.md) C4, [ADR-0013](decisions/ADR-0013-canonical-format-rules.md)).
+- **P4-3** — Refactor Preview for atomic multi-file apply (closes `P3-8` partial gaps).
+- Parser decomposition (`src/core/parse/`) when `P0-14` allowlist work starts.
+
+## Archived phase plans
+
+| Doc | Notes |
+|---|---|
+| [`09-p3-6-drop-table-plan.md`](09-p3-6-drop-table-plan.md) | P3-6 implementation plan — done; kept for pipeline reference |

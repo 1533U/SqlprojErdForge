@@ -7,9 +7,14 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 
 ## [Unreleased]
 
+### Added
+- **P0-15 — canonical format rules:** C4.1–C4.8 in `docs/03-sql-conventions.md`; [ADR-0013](docs/decisions/ADR-0013-canonical-format-rules.md) pins emitter output as the spec for `P4-1`.
+
 ### Changed
-- **Docs synced** for Phase 3 progress: STATUS, backlog (`P3-8` partial done), README
-  (`verify:p3`), roadmap (ops 1–2 shipped), and architecture (edit layer + parser ADR-0009).
+- **Phase 3 close-out:** consolidated `includeAbsPath` in `src/edits/paths.ts`; deduped inbound-FK
+  lookup in `memberChecks.ts`; aligned webview rename/add-table validation messages with server;
+  extended `verify:p3` rename-table checks for schema change; synced STATUS, backlog, roadmap,
+  refactor plan, edit-UX invariants, and README for Phase 3 complete.
 - **Phase 3 refactor:** deduplicated edit pipeline (`buildFileEditCandidate`, per-op mutation
   helpers, shared `validateEditableTable` / `findColumn` / `splitTableKey`), unified host/webview
   protocol types in `src/protocol/`, generic `handlePrepareEdit` in the extension panel, grouped

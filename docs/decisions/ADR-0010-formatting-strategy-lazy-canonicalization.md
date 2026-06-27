@@ -54,6 +54,8 @@ explicit, opt-in "format this file" command). Concretely:
   `leadingComments`), but blank lines do not. This is an accepted normalization cost.
 - Because re-emitting an already-canonical file is a no-op, no "is canonical" marker is
   needed; canonical state is defined by the emitter being a fixed point.
+- **Exact format rules** are pinned in C4.1–C4.8 of [`../03-sql-conventions.md`](../03-sql-conventions.md)
+  and [ADR-0013](ADR-0013-canonical-format-rules.md) (`P0-15`).
 - Option (a) is rejected outright: it contradicts
   [ADR-0003](ADR-0003-opinionated-subset-and-canonical-format.md).
 

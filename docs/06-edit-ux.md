@@ -76,9 +76,12 @@ file(s) → preview → apply*:
 - An edit only rewrites the file(s) it must; unrelated files are untouched.
 - The emitter always produces canonical, order-preserving, comment-preserving output, so
   the preview diff is always reviewable.
-- Multi-file edits (renames affecting FKs) are applied atomically via a single
-  `WorkspaceEdit`.
-- Layout entries are migrated/created/removed in lockstep with table add/rename/drop.
+- Multi-file edits (renames affecting FKs) are previewed sequentially (`1/N` per file) and
+  applied one file at a time today; atomic multi-file apply is deferred to Phase 4 (`P4-3`).
+- Layout entries are migrated/created/removed in lockstep with table add/rename/drop (when the
+  user completes the full candidate sequence).
+- **Constraint names are not renamed** when a table or column is renamed — only identifiers and
+  `REFERENCES` targets update (same policy as rename column).
 
 ## Conflict & liveness handling
 
