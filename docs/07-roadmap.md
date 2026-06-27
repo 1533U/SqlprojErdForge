@@ -62,8 +62,8 @@ criterion so we never build UI on top of an unproven foundation.
 ([`06-edit-ux.md`](06-edit-ux.md)).
 
 **Progress (2026-06-27):** **Phase 3 complete.** All eight edit ops shipped; edit layer in
-`src/edits/` with headless checks via `npm run verify:p3`. Multi-file edits use sequential
-diff preview (`1/N`); atomic Refactor Preview deferred to Phase 4 (`P4-3`).
+`src/edits/` with headless checks via `npm run verify:p3`. Multi-file edits use VS Code
+Refactor Preview for atomic apply (`P4-3`).
 
 Order of operations:
 1. Add foreign key — **done** (`P3-1`).
@@ -74,17 +74,17 @@ Order of operations:
 6. Drop table (delete file, warn on inbound FKs) — **done** (`P3-6`).
 7. Rename table (rename file, update FKs, migrate layout key) — **done** (`P3-7`).
 
-Each ships with diff-preview Apply/Discard (single-file immediate; multi-file sequential
-`1/N` today — atomic Refactor Preview in Phase 4 `P4-3`).
+Each ships with diff preview: single-file → diff editor + Apply/Discard; multi-file →
+Refactor Preview (`P4-3`).
 
 **Exit criteria (Phase 3):** met — all eight ops pass `npm run verify:p3`; host/webview/protocol
 registry in sync; per-op validate → clone → mutate → candidates pipeline.
 
 ## Phase 4 — Guardrails & polish
 
-- Canonical formatter + CI format check (enforce C4/C5).
-- Optional DACPAC build in CI as the correctness backstop.
-- Refactor Preview for multi-file edits; conflict handling on concurrent file changes.
+- Canonical formatter + CI format check (enforce C4/C5) — **done** (`P4-1`).
+- Optional DACPAC build in CI as the correctness backstop — **done** (`P4-2`).
+- Refactor Preview for multi-file edits — **done** (`P4-3`); conflict handling on concurrent file changes.
 - Editing affordances: edit comment text on the diagram, reorder via explicit action, etc.
 
 **Exit criteria:** CI enforces conventions; multi-file edits are safe and previewable.

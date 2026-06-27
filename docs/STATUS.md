@@ -4,12 +4,11 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-27
-**Current phase:** Phase 4 — guardrails (`P4-1`, `P4-2`, `P0-14a` done); next: **`P4-3`**
+**Current phase:** Phase 4 — guardrails (`P4-1`, `P4-2`, `P0-14a`, **`P4-3`** done); next: **`P4-4`** or optional **`P0-14b`**
 **Overall state:** Phase 0–2 complete. **Phase 3 complete.** **Phase 4 guardrails:** format
 conformance (`P4-1`), file-role discovery filter (`P0-14a`), DACPAC CI backstop on fixtures
-(`P4-2` — CI-only, extension stays pure TypeScript per ADR-0002). Multi-file edits still
-sequential (`P3-8` partial → `P4-3`). Optional follow-up: column-modifier allowlist triage
-(`P0-14b`).
+(`P4-2`), **atomic multi-file Refactor Preview** (`P4-3` — closes `P3-8` partial gap).
+Optional follow-up: column-modifier allowlist triage (`P0-14b`).
 
 ## Done
 
@@ -88,7 +87,7 @@ sequential (`P3-8` partial → `P4-3`). Optional follow-up: column-modifier allo
     propagate to PK/unique/FK local columns, PERIOD bounds, and inbound `REFERENCES` across
     files. [`buildFileEditCandidates`](../src/edits/candidate.ts) for multi-file edits.
   - Webview **Rename column** mode: column pick → new name → preview; multi-file edits use
-    sequential diff preview (`1/N`) in [`diffPreview.ts`](../src/extension/diffPreview.ts).
+    Refactor Preview ([`diffPreview.ts`](../src/extension/diffPreview.ts), `P4-3`).
   - `EditValidationResult` now returns `candidates[]`; `npm run verify:p3` extended.
 - **Phase 3 — change column type / nullability** (`P3-4`, 2026-06-27):
   - [`src/edits/changeColumn.ts`](../src/edits/changeColumn.ts): update `dataType` and
@@ -104,7 +103,7 @@ sequential (`P3-8` partial → `P4-3`). Optional follow-up: column-modifier allo
     entry in lockstep.
   - First file-creating edit: `FileEditCandidate.isNewFile` + diff-preview apply creates files
     on disk ([`src/extension/diffPreview.ts`](../src/extension/diffPreview.ts)).
-  - Webview **Add table** mode: schema + table name form → sequential diff preview (sql →
+  - Webview **Add table** mode: schema + table name form → Refactor Preview (sql →
     sqlproj → layout).
   - Registered as sixth op in [`src/edits/registry.ts`](../src/edits/registry.ts);
     `npm run verify:p3` extended.
@@ -113,7 +112,7 @@ sequential (`P3-8` partial → `P4-3`). Optional follow-up: column-modifier allo
     `<Build Include>` ([`removeBuildInclude`](../src/edits/sqlprojEdit.ts)), and strip layout
     entry ([`removeLayoutEntry`](../src/layout.ts)) in lockstep.
   - `FileEditCandidate.isDeleteFile` + diff-preview apply path for file deletion.
-  - Webview **Drop table** mode: table header pick → inbound-FK warning → sequential diff preview.
+  - Webview **Drop table** mode: table header pick → inbound-FK warning → Refactor Preview.
   - Registered as seventh op; `npm run verify:p3` extended. Plan:
     [`docs/09-p3-6-drop-table-plan.md`](09-p3-6-drop-table-plan.md).
 - **Phase 3 — rename table** (`P3-7`, 2026-06-27):
@@ -121,12 +120,12 @@ sequential (`P3-8` partial → `P4-3`). Optional follow-up: column-modifier allo
     (`schema.table.sql`), update `.sqlproj` `<Build Include>` ([`replaceBuildInclude`](../src/edits/sqlprojEdit.ts)),
     migrate layout key ([`migrateLayoutEntry`](../src/layout.ts)), and propagate inbound
     `REFERENCES` across files.
-  - Webview **Rename table** mode: table header pick → schema + new name form → sequential diff
-    preview (delete old file → create new file → inbound FK updates → sqlproj → layout).
+  - Webview **Rename table** mode: table header pick → schema + new name form → Refactor
+    Preview (rename file → inbound FK updates → sqlproj → layout).
   - Registered as eighth op; `npm run verify:p3` extended.
 - **Phase 3 close-out** (2026-06-27): edit-pipeline audit green; `includeAbsPath` consolidated
   in `src/edits/paths.ts`; inbound-FK lookup deduped; constraint names intentionally unchanged
-  on rename table (same as rename column); multi-file apply UX gaps documented below.
+  on rename table (same as rename column); multi-file apply via Refactor Preview (`P4-3`).
 - **Phase 4 — canonical format rules** (`P0-15`, 2026-06-27):
   - Pinned C4.1–C4.8 in [`docs/03-sql-conventions.md`](03-sql-conventions.md) (4-space indent,
     trailing commas, uppercase keywords, unbracketed simple identifiers, no alignment).
@@ -150,14 +149,23 @@ sequential (`P3-8` partial → `P4-3`). Optional follow-up: column-modifier allo
   - `npm run verify:dacpac` (skips locally when dotnet absent). **Not a runtime dependency**
     — VS Code extension remains standalone ([ADR-0002](decisions/ADR-0002-pure-typescript-parser.md)).
   - Fixture sqlproj uses `Microsoft.Build.Sql` SDK.
+- **Phase 4 — Refactor Preview / atomic multi-file apply** (`P4-3`, 2026-06-27):
+  - Multi-candidate edits (rename table, rename column w/ inbound FKs, add/drop table) use
+    VS Code **Refactor Preview** — one `WorkspaceEdit` with `needsConfirmation: true` per
+    change ([`src/extension/diffPreview.ts`](../src/extension/diffPreview.ts)).
+  - Single-file edits keep diff editor + Apply/Discard. Rename table delete+create paired via
+    `renamePairKey` → atomic `renameFile` + content replace
+    ([`src/edits/batchCandidates.ts`](../src/edits/batchCandidates.ts)).
+  - Retired sequential `1/N` diff stepper. Plan: [`11-p4-3-refactor-preview-plan.md`](11-p4-3-refactor-preview-plan.md).
+  - `npm run verify:p3` extended with batch validation checks.
 
 ## In progress
 
-- _None._ Next session: **`P4-3`** — Refactor Preview / atomic multi-file apply.
+- _None._ Next session: **`P4-4`** conflict handling, or optional **`P0-14b`** / **`P4-6`**.
 
 ## Next up (immediate — start here next session)
 
-1. **P4-3** — Refactor Preview / atomic multi-file apply (closes `P3-8` partial gaps).
+1. **P4-4** — conflict handling on concurrent file changes.
 2. **P0-14b** (optional) — column-modifier allowlist triage on real project (~591 warnings).
 3. **P4-6** (optional polish) — group crowded webview edit toolbar.
 
@@ -207,13 +215,9 @@ sequential (`P3-8` partial → `P4-3`). Optional follow-up: column-modifier allo
 - **Constraint names on rename table/column** — intentionally preserved (e.g.
   `PK_pr_shipping_type` stays after renaming to `pr_shipment_type`). Only table/column
   identifiers and `REFERENCES` targets update. Optional rename-constraint op deferred.
-- **Multi-file sequential diff preview (`P3-8` partial)** — each file in a multi-candidate
-  edit is applied one-at-a-time via separate `WorkspaceEdit`s, not atomically. Risks: user
-  applies step 1 then abandons (orphan sqlproj/layout vs missing file); rename table is
-  delete-then-create on disk (two steps). `FileEditCandidate` has `isNewFile` /
-  `isDeleteFile` but no paired `isRenameFile`. Mitigation today: per-step revision check +
-  user must complete the sequence or Git-revert. Proper fix: `P4-3` Refactor Preview or
-  batched atomic apply.
+- **Multi-file Refactor Preview (`P4-3`)** — **done.** Multi-candidate edits apply atomically
+  via VS Code Refactor Preview; rename table uses `renameFile` pairing. Single-file diff
+  preview unchanged.
 - **Webview header crowding** — eight edit buttons in the toolbar; consider an **Edit…**
   dropdown/menu (`P4-6` in backlog). Not blocking Phase 4.
 

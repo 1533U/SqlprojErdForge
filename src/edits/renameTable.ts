@@ -175,6 +175,8 @@ function buildRenameTableCandidates(
     return { ok: false, message: `Source file not found for ${params.oldTableKey}.` };
   }
 
+  const renamePairKey = `rename:${originalTable.sourceFile}`;
+
   candidates.push({
     absPath: tableAbsPath(originalModel.projectPath, originalTable),
     sourceFile: originalTable.sourceFile,
@@ -182,6 +184,7 @@ function buildRenameTableCandidates(
     candidateContent: "",
     originalRevision: contentRevision(originalContent),
     isDeleteFile: true,
+    renamePairKey,
   });
 
   const newAbsPath = includeAbsPath(originalModel.projectPath, params.newSourceFile);
@@ -199,6 +202,7 @@ function buildRenameTableCandidates(
     candidateContent: emitTable(mutatedTable),
     originalRevision: contentRevision(""),
     isNewFile: true,
+    renamePairKey,
   });
 
   const referencingKeys = [...touchedKeys]

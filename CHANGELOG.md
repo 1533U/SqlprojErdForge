@@ -8,6 +8,11 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 ## [Unreleased]
 
 ### Added
+- **P4-3 — Refactor Preview / atomic multi-file apply:** multi-candidate edits (rename table,
+  rename column with inbound FKs, add/drop table) use VS Code Refactor Preview (`WorkspaceEdit`
+  + `needsConfirmation`); single-file edits keep diff editor + Apply/Discard; rename table
+  delete+create paired via `renamePairKey` for atomic `renameFile`; headless batch checks in
+  `npm run verify:p3`; plan `docs/11-p4-3-refactor-preview-plan.md`.
 - **P0-14 / P0-14a — real-project coverage triage + file-role detection:** triage doc
   `docs/10-p0-14-coverage-triage.md`; `src/sqlFileRole.ts` skips proc/view/function `.sql`
   before table parse (eliminates 9 false errors on real project); `npm run verify:p014`;

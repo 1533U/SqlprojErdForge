@@ -32,6 +32,7 @@ export function runRenameTableChecks(h: VerifyHarness, model: ProjectModel): voi
         "delete candidate original contains CREATE TABLE",
         deleteCandidate.originalContent.includes("CREATE TABLE"),
       );
+      h.check("delete candidate has renamePairKey", deleteCandidate.renamePairKey != null);
     }
 
     const createCandidate = prepared.candidates.find(
@@ -40,6 +41,11 @@ export function runRenameTableChecks(h: VerifyHarness, model: ProjectModel): voi
     h.check("new sql candidate is a new file", createCandidate != null);
     if (createCandidate) {
       h.check("new file uses renamed include path", createCandidate.sourceFile === newInclude);
+      h.check(
+        "create candidate shares renamePairKey with delete",
+        deleteCandidate?.renamePairKey != null &&
+          createCandidate.renamePairKey === deleteCandidate.renamePairKey,
+      );
       h.check(
         "new file emits renamed CREATE TABLE",
         createCandidate.candidateContent.includes("CREATE TABLE dbo.pr_shipment_type"),

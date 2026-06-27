@@ -73,6 +73,11 @@ export interface FileEditCandidate {
   isNewFile?: boolean;
   /** When true, apply deletes the file instead of replacing content. */
   isDeleteFile?: boolean;
+  /**
+   * Links a delete candidate to its create counterpart for atomic `renameFile` apply
+   * (rename table). Both sides of the pair share the same key.
+   */
+  renamePairKey?: string;
 }
 
 export type EditValidationResult =

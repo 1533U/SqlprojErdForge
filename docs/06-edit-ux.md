@@ -40,32 +40,32 @@ but it offers three ways to do "show before/after, then confirm," which we combi
    undo stack (Ctrl+Z) and, because `.sql` files are Git-tracked, also show in the Source
    Control panel. Even if a user skips the preview, the change is recoverable and
    reviewable in a PR.
-3. **Refactor Preview panel (optional, multi-file edits).** Apply a `WorkspaceEdit` whose
+3. **Refactor Preview panel (multi-file edits).** Apply a `WorkspaceEdit` whose
    edits are marked `needsConfirmation: true`; VS Code shows its Refactor Preview tree
-   with per-change checkboxes. Useful when an edit spans multiple tables/files (e.g. a
-   rename that updates referencing FKs).
+   with per-change checkboxes. Used when an edit spans multiple tables/files (e.g. a
+   rename that updates referencing FKs, add/drop table with sqlproj + layout).
 
 ## Recommended default
 
-- **Primary:** Option 1 (diff editor + Apply/Discard).
+- **Primary (single file):** Option 1 (diff editor + Apply/Discard).
+- **Primary (multi-file):** Option 3 (Refactor Preview — atomic apply).
 - **Backstop:** Option 2 (undo + Git) always available.
-- **Add later:** Option 3 for multi-file edits.
 
 ## Supported edit operations (introduced incrementally)
 
 **Shipped (2026-06-27):** add foreign key; add / remove column; rename column (with inbound FK
 propagation); change column type / nullability; add table (new file + sqlproj + layout);
 drop table (delete file + sqlproj + layout, inbound-FK warning); rename table (file + sqlproj +
-layout key migration + inbound FK propagation); single-file diff preview with Apply/Discard.
-Multi-file rename uses sequential diff preview (`1/N`); full Refactor Preview panel deferred to Phase 4 (`P4-3`).
+layout key migration + inbound FK propagation); single-file diff preview with Apply/Discard;
+multi-file edits use Refactor Preview (atomic apply, `P4-3`).
 
 Edits are added one well-defined operation at a time, each = *mutate model → emit affected
 file(s) → preview → apply*:
 
 1. **Add foreign key** — **done** (`P3-1`).
 2. **Add column** / **remove column** — **done** (`P3-2`).
-3. **Rename column** (must update FK definitions that reference it; multi-file → sequential
-   diff preview) — **done** (`P3-3`).
+3. **Rename column** (must update FK definitions that reference it; multi-file → Refactor
+   Preview) — **done** (`P3-3`).
 4. **Change column type / nullability** — **done** (`P3-4`).
 5. **Add table** (creates a new `schema.table.sql` file + a layout entry) — **done** (`P3-5`).
 6. **Drop table** (deletes the file; warn if other tables reference it) — **done** (`P3-6`).
@@ -76,8 +76,9 @@ file(s) → preview → apply*:
 - An edit only rewrites the file(s) it must; unrelated files are untouched.
 - The emitter always produces canonical, order-preserving, comment-preserving output, so
   the preview diff is always reviewable.
-- Multi-file edits (renames affecting FKs) are previewed sequentially (`1/N` per file) and
-  applied one file at a time today; atomic multi-file apply is deferred to Phase 4 (`P4-3`).
+- Multi-file edits (renames affecting FKs, add/drop table) are previewed in VS Code's
+  Refactor Preview and applied atomically in one `WorkspaceEdit` (`P4-3`). Single-file
+  edits use the diff editor.
 - Layout entries are migrated/created/removed in lockstep with table add/rename/drop (when the
   user completes the full candidate sequence).
 - **Constraint names are not renamed** when a table or column is renamed — only identifiers and

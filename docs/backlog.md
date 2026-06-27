@@ -54,12 +54,12 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 |----|------|--------|-------|
 | P3-1 | Add foreign key | done | webview two-click connect → diff preview → apply |
 | P3-2 | Add / remove column | done | webview Add/Remove column modes; PK/FK guardrails on remove |
-| P3-3 | Rename column (multi-file FK updates) | done | propagates to inbound REFERENCES; sequential diff preview 1/N |
+| P3-3 | Rename column (multi-file FK updates) | done | propagates to inbound REFERENCES; Refactor Preview |
 | P3-4 | Change column type / nullability | done | webview Change column mode; IDENTITY/temporal/PK guardrails |
 | P3-5 | Add table (new file + layout entry) | done | webview Add table mode; sqlproj + layout in lockstep |
 | P3-6 | Drop table (delete file, warn on inbound FKs) | done | webview Drop table mode; sqlproj + layout in lockstep |
-| P3-7 | Rename table (file + FKs + layout key migration) | done | eighth edit op; sequential diff preview |
-| P3-8 | Diff-preview Apply/Discard pipeline | done (partial) | single-file + sequential multi-file (`1/N`); atomic Refactor Preview → `P4-3` |
+| P3-7 | Rename table (file + FKs + layout key migration) | done | eighth edit op; Refactor Preview |
+| P3-8 | Diff-preview Apply/Discard pipeline | done | single-file diff editor; multi-file → Refactor Preview (`P4-3`) |
 
 **Phase 3 exit:** all eight ops registered, wired host/webview/protocol, `npm run verify:p3` green.
 
@@ -70,7 +70,7 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 | P0-15 | Pin exact canonical formatting rules (indent/alignment/casing/bracketing) | done | C4.1–C4.8; ADR-0013 |
 | P4-1 | Canonical formatter + CI format check | done | `src/formatCheck.ts`; `npm run format:check` + `verify:format`; CI on changed `.sql` |
 | P4-2 | DACPAC build in CI (correctness backstop) | done | CI `dacpac` job; `verify:dacpac`; fixture SDK; CI-only per ADR-0002 |
-| P4-3 | Refactor Preview for multi-file edits | todo | atomic apply; addresses P3-8 partial gaps |
+| P4-3 | Refactor Preview for multi-file edits | done | atomic apply; rename table `renamePairKey` pairing; plan `11-p4-3-refactor-preview-plan.md` |
 | P4-4 | Conflict handling on concurrent file changes | todo | |
 | P4-5 | Edit comment text on the diagram | todo | |
 | P4-6 | Group webview edit toolbar (Edit… menu) | todo | eight header buttons today |

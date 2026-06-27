@@ -37,7 +37,7 @@ Each slice is ≤1 session; run the listed verify commands before merging.
 
 - **P4-1** — done: `src/formatCheck.ts` + `npm run format:check` / CI on changed `.sql` only.
 - **P0-14a / P4-2** — done: file-role filter + DACPAC CI (extension still standalone).
-- **P4-3** — Refactor Preview for atomic multi-file apply (closes `P3-8` partial gaps).
+- **P4-3** — done: Refactor Preview for atomic multi-file apply; plan [`11-p4-3-refactor-preview-plan.md`](11-p4-3-refactor-preview-plan.md).
 - Parser decomposition (`src/core/parse/`) when `P0-14` allowlist work starts.
 
 ## Archived phase plans
@@ -45,3 +45,4 @@ Each slice is ≤1 session; run the listed verify commands before merging.
 | Doc | Notes |
 |---|---|
 | [`09-p3-6-drop-table-plan.md`](09-p3-6-drop-table-plan.md) | P3-6 implementation plan — done; kept for pipeline reference |
+| [`11-p4-3-refactor-preview-plan.md`](11-p4-3-refactor-preview-plan.md) | P4-3 Refactor Preview — done; batch apply reference |
