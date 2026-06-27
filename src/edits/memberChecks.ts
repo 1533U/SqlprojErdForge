@@ -27,18 +27,52 @@ export function validateEditableTable(
   return { ok: true, table };
 }
 
+const SIMPLE_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
 export function validateColumnName(name: string): { ok: true } | { ok: false; message: string } {
   const trimmed = name.trim();
   if (!trimmed) {
     return { ok: false, message: "Column name is required." };
   }
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(trimmed)) {
+  if (!SIMPLE_IDENTIFIER.test(trimmed)) {
     return {
       ok: false,
       message: "Column name must be a simple identifier (letters, digits, underscore).",
     };
   }
   return { ok: true };
+}
+
+export function validateSchemaName(name: string): { ok: true } | { ok: false; message: string } {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return { ok: false, message: "Schema name is required." };
+  }
+  if (!SIMPLE_IDENTIFIER.test(trimmed)) {
+    return {
+      ok: false,
+      message: "Schema name must be a simple identifier (letters, digits, underscore).",
+    };
+  }
+  return { ok: true };
+}
+
+export function validateTableName(name: string): { ok: true } | { ok: false; message: string } {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return { ok: false, message: "Table name is required." };
+  }
+  if (!SIMPLE_IDENTIFIER.test(trimmed)) {
+    return {
+      ok: false,
+      message: "Table name must be a simple identifier (letters, digits, underscore).",
+    };
+  }
+  return { ok: true };
+}
+
+export function tableKeyFromParts(schema: string, tableName: string): string {
+  return `${schema.trim()}.${tableName.trim()}`;
 }
 
 /** Index before the first constraint or PERIOD member (C5 — columns precede constraints). */

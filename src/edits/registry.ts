@@ -5,13 +5,17 @@
 import type { ProjectModel } from "../model.ts";
 import { prepareAddColumn } from "./addColumn.ts";
 import { prepareAddForeignKey } from "./addForeignKey.ts";
+import { prepareAddTable } from "./addTable.ts";
 import { prepareRemoveColumn } from "./removeColumn.ts";
 import { prepareChangeColumn } from "./changeColumn.ts";
+import { prepareDropTable } from "./dropTable.ts";
 import { prepareRenameColumn } from "./renameColumn.ts";
 import type {
   AddColumnParams,
   AddForeignKeyParams,
+  AddTableParams,
   ChangeColumnParams,
+  DropTableParams,
   EditValidationResult,
   RemoveColumnParams,
   RenameColumnParams,
@@ -22,7 +26,9 @@ export type EditOperationId =
   | "addColumn"
   | "removeColumn"
   | "renameColumn"
-  | "changeColumn";
+  | "changeColumn"
+  | "addTable"
+  | "dropTable";
 
 export type EditIntentMap = {
   addForeignKey: AddForeignKeyParams;
@@ -30,6 +36,8 @@ export type EditIntentMap = {
   removeColumn: RemoveColumnParams;
   renameColumn: RenameColumnParams;
   changeColumn: ChangeColumnParams;
+  addTable: AddTableParams;
+  dropTable: DropTableParams;
 };
 
 export interface EditOperation<K extends EditOperationId = EditOperationId> {
@@ -66,6 +74,17 @@ export const editOperations: { [K in EditOperationId]: EditOperation<K> } = {
     prepare: prepareChangeColumn,
     previewTitle: (intent) =>
       `Change column ${intent.tableKey}.${intent.columnName} → ${intent.dataType} ${intent.nullable ? "NULL" : "NOT NULL"}`,
+  },
+  addTable: {
+    id: "addTable",
+    prepare: prepareAddTable,
+    previewTitle: (intent) =>
+      `Add table ${intent.schema.trim()}.${intent.tableName.trim()}`,
+  },
+  dropTable: {
+    id: "dropTable",
+    prepare: prepareDropTable,
+    previewTitle: (intent) => `Drop table ${intent.tableKey.trim()}`,
   },
 };
 

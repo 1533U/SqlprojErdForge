@@ -10,8 +10,11 @@ export function EditBanner({
   onConfirmRemoveColumn,
   onConfirmRenameColumn,
   onConfirmChangeColumn,
+  onConfirmAddTable,
+  onConfirmDropTable,
   onRenameNewNameChange,
   onChangeColumnDraftChange,
+  onAddTableChange,
   onCancel,
 }: {
   edit: EditSessionState;
@@ -21,8 +24,11 @@ export function EditBanner({
   onConfirmRemoveColumn: () => void;
   onConfirmRenameColumn: () => void;
   onConfirmChangeColumn: () => void;
+  onConfirmAddTable: () => void;
+  onConfirmDropTable: () => void;
   onRenameNewNameChange: (name: string) => void;
   onChangeColumnDraftChange: (patch: Partial<EditSessionState["changeColumnDraft"]>) => void;
+  onAddTableChange: (patch: Partial<Pick<EditSessionState, "addTableSchema" | "addTableName">>) => void;
   onCancel: () => void;
 }) {
   if (edit.mode === "none") return null;
@@ -184,6 +190,51 @@ export function EditBanner({
           edit.changeColumnDraft.dataType.trim().length > 0 &&
           (edit.changeColumnDraft.dataType.trim() !== edit.changeColumnOriginal.dataType ||
             edit.changeColumnDraft.nullable !== edit.changeColumnOriginal.nullable);
+      }
+      break;
+    case "addTable":
+      body = (
+        <span className="erdforge-edit-banner__form">
+          <label>
+            Schema
+            <input
+              type="text"
+              value={edit.addTableSchema}
+              onChange={(event) => onAddTableChange({ addTableSchema: event.target.value })}
+              placeholder="dbo"
+            />
+          </label>
+          <label>
+            Table name
+            <input
+              type="text"
+              value={edit.addTableName}
+              onChange={(event) => onAddTableChange({ addTableName: event.target.value })}
+              placeholder="pr_new_table"
+            />
+          </label>
+        </span>
+      );
+      confirmLabel = "Preview table";
+      onConfirm = onConfirmAddTable;
+      confirmEnabled =
+        edit.addTableSchema.trim().length > 0 && edit.addTableName.trim().length > 0;
+      break;
+    case "dropTable":
+      if (edit.dropTableTarget == null) {
+        body = <span>Click a table header to choose which table to drop.</span>;
+      } else {
+        body = (
+          <span>
+            Drop <strong>{edit.dropTableTarget}</strong>?
+            {edit.dropTableWarning ? (
+              <span className="erdforge-edit-banner__warning">{edit.dropTableWarning}</span>
+            ) : null}
+          </span>
+        );
+        confirmLabel = "Preview drop";
+        onConfirm = onConfirmDropTable;
+        confirmEnabled = true;
       }
       break;
     default: {

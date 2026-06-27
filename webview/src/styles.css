@@ -113,6 +113,12 @@ body,
   color: var(--vscode-errorForeground, #f48771);
 }
 
+.erdforge-edit-banner__warning {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
 .erdforge-edit-banner__form {
   display: inline-flex;
   flex-wrap: wrap;

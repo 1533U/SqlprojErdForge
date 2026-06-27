@@ -4,12 +4,12 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-27
-**Current phase:** Phase 3 in progress — next: add table (`P3-5`)
+**Current phase:** Phase 3 in progress — next: rename table (`P3-7`)
 **Overall state:** Phase 0–2 complete. Phase 3: **Add FK** (`P3-1`), **Add/remove column**
 (`P3-2`), **Rename column** (`P3-3`), **Change column type/nullability** (`P3-4`),
-**single-file diff preview + Apply/Discard** (`P3-8` partial), and the **edit-pipeline refactor**
-are landed and verified via `npm run verify:p3`. Remaining Phase 3 ops (table add/drop/rename)
-not started.
+**Add table** (`P3-5`), **Drop table** (`P3-6`), **single-file diff preview + Apply/Discard**
+(`P3-8` partial), and the **edit-pipeline refactor** are landed and verified via
+`npm run verify:p3`. Remaining Phase 3 op: table rename (`P3-7`).
 Multi-file rename uses sequential diff preview (Apply advances 1/N); full Refactor Preview
 deferred to `P4-3`. Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
 
@@ -99,14 +99,33 @@ deferred to `P4-3`. Two Phase 0 follow-ups remain open (`P0-14`, `P0-15`).
   - Webview **Change column** mode: column pick → type/nullable form → preview.
   - Registered as fifth op in [`src/edits/registry.ts`](../src/edits/registry.ts);
     `npm run verify:p3` extended.
+- **Phase 3 — add table** (`P3-5`, 2026-06-27):
+  - [`src/edits/addTable.ts`](../src/edits/addTable.ts): canonical CREATE TABLE for a new table
+    (identity PK column), `.sqlproj` `<Build Include>` insertion
+    ([`src/edits/sqlprojEdit.ts`](../src/edits/sqlprojEdit.ts)), and `.erdforge/layout.json`
+    entry in lockstep.
+  - First file-creating edit: `FileEditCandidate.isNewFile` + diff-preview apply creates files
+    on disk ([`src/extension/diffPreview.ts`](../src/extension/diffPreview.ts)).
+  - Webview **Add table** mode: schema + table name form → sequential diff preview (sql →
+    sqlproj → layout).
+  - Registered as sixth op in [`src/edits/registry.ts`](../src/edits/registry.ts);
+    `npm run verify:p3` extended.
+- **Phase 3 — drop table** (`P3-6`, 2026-06-27):
+  - [`src/edits/dropTable.ts`](../src/edits/dropTable.ts): delete `.sql` file, remove `.sqlproj`
+    `<Build Include>` ([`removeBuildInclude`](../src/edits/sqlprojEdit.ts)), and strip layout
+    entry ([`removeLayoutEntry`](../src/layout.ts)) in lockstep.
+  - `FileEditCandidate.isDeleteFile` + diff-preview apply path for file deletion.
+  - Webview **Drop table** mode: table header pick → inbound-FK warning → sequential diff preview.
+  - Registered as seventh op; `npm run verify:p3` extended. Plan:
+    [`docs/09-p3-6-drop-table-plan.md`](09-p3-6-drop-table-plan.md).
 
 ## In progress
 
-- _None._ Next session starts **P3-5** (add table).
+- _None._ Next session starts **P3-7** (rename table).
 
 ## Next up (immediate — start here next session)
 
-1. **P3-5** — add table (new file + layout entry).
+1. **P3-7** — rename table (file + FKs + layout key migration).
 2. Pin the **exact canonical formatting rules** (`P0-15`).
 3. Triage real-project coverage gaps (`P0-14`).
 

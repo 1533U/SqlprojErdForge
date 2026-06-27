@@ -172,7 +172,16 @@ export class ErdPanel {
   private async handleEditMessage(
     message: Extract<
       WebviewToHostMessage,
-      { type: "addForeignKey" | "addColumn" | "removeColumn" | "renameColumn" | "changeColumn" }
+      {
+        type:
+          | "addForeignKey"
+          | "addColumn"
+          | "removeColumn"
+          | "renameColumn"
+          | "changeColumn"
+          | "addTable"
+          | "dropTable";
+      }
     >,
   ): Promise<void> {
     if (!this.model) {

@@ -2,6 +2,8 @@
  * Pure edit-mode interaction rules shared by webview selection UX and row highlighting.
  */
 
+import { tableKeyFromParts, validateSchemaName, validateTableName } from "./memberChecks.ts";
+
 export interface ColumnRef {
   tableKey: string;
   columnName: string;
@@ -13,7 +15,9 @@ export type EditMode =
   | "addColumn"
   | "removeColumn"
   | "renameColumn"
-  | "changeColumn";
+  | "changeColumn"
+  | "addTable"
+  | "dropTable";
 
 export interface GraphColumnView {
   name: string;
@@ -47,6 +51,55 @@ export function selectTableForAddColumn(
     return { ok: false, message: readOnlyTableMessage(tableKey, "table") };
   }
   return { ok: true, tableKey };
+}
+
+export function validateAddTableForm(
+  tables: GraphTableView[],
+  schema: string,
+  tableName: string,
+): { ok: true; tableKey: string } | { ok: false; message: string } {
+  const schemaResult = validateSchemaName(schema);
+  if (!schemaResult.ok) return schemaResult;
+
+  const tableResult = validateTableName(tableName);
+  if (!tableResult.ok) return tableResult;
+
+  const tableKey = tableKeyFromParts(schema, tableName);
+  if (tables.some((table) => table.key === tableKey)) {
+    return { ok: false, message: `Table ${tableKey} already exists.` };
+  }
+
+  return { ok: true, tableKey };
+}
+
+export function selectTableForDrop(
+  table: GraphTableView | undefined,
+  tableKey: string,
+): { ok: true; tableKey: string } | { ok: false; message: string } {
+  if (!table) {
+    return { ok: false, message: `Table not found: ${tableKey}.` };
+  }
+  if (table.readOnly) {
+    return { ok: false, message: readOnlyTableMessage(tableKey, "table") };
+  }
+  return { ok: true, tableKey };
+}
+
+export interface GraphEdgeView {
+  from: string;
+  to: string;
+  label: string;
+}
+
+export function inboundFkWarningForDrop(
+  edges: GraphEdgeView[],
+  tableKey: string,
+): string | undefined {
+  const refs = edges.filter((edge) => edge.to === tableKey);
+  if (refs.length === 0) return undefined;
+
+  const detail = refs.map((edge) => `${edge.from} (${edge.label})`).join(", ");
+  return `${refs.length} foreign key(s) reference this table: ${detail}.`;
 }
 
 export interface FkSelectionState {

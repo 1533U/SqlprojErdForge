@@ -6,7 +6,9 @@ import type { GraphPayload } from "./graphPayload.ts";
 import type {
   AddColumnParams,
   AddForeignKeyParams,
+  AddTableParams,
   ChangeColumnParams,
+  DropTableParams,
   RemoveColumnParams,
   RenameColumnParams,
 } from "../edits/types.ts";
@@ -16,6 +18,8 @@ export type AddColumnIntent = AddColumnParams;
 export type RemoveColumnIntent = RemoveColumnParams;
 export type RenameColumnIntent = RenameColumnParams;
 export type ChangeColumnIntent = ChangeColumnParams;
+export type AddTableIntent = AddTableParams;
+export type DropTableIntent = DropTableParams;
 
 export type HostToWebviewMessage =
   | { type: "graph"; payload: GraphPayload }
@@ -30,7 +34,9 @@ export type WebviewToHostMessage =
   | { type: "addColumn"; intent: AddColumnIntent }
   | { type: "removeColumn"; intent: RemoveColumnIntent }
   | { type: "renameColumn"; intent: RenameColumnIntent }
-  | { type: "changeColumn"; intent: ChangeColumnIntent };
+  | { type: "changeColumn"; intent: ChangeColumnIntent }
+  | { type: "addTable"; intent: AddTableIntent }
+  | { type: "dropTable"; intent: DropTableIntent };
 
 export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMessage {
   if (!value || typeof value !== "object") return false;
@@ -43,6 +49,8 @@ export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMe
     case "removeColumn":
     case "renameColumn":
     case "changeColumn":
+    case "addTable":
+    case "dropTable":
       return true;
     default:
       return false;

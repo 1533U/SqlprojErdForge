@@ -12,6 +12,8 @@ export type {
 export type {
   AddColumnIntent,
   AddForeignKeyIntent,
+  AddTableIntent,
+  DropTableIntent,
   ChangeColumnIntent,
   HostToWebviewMessage,
   RemoveColumnIntent,
@@ -58,6 +60,10 @@ export interface EditSessionState {
   changeColumnOriginal: ChangeColumnDraft | undefined;
   changeColumnDraft: ChangeColumnDraft;
   newColumn: NewColumnDraft;
+  addTableSchema: string;
+  addTableName: string;
+  dropTableTarget: string | undefined;
+  dropTableWarning: string | undefined;
   message: string | undefined;
 }
 
@@ -73,6 +79,10 @@ export const initialEditSession = (): EditSessionState => ({
   changeColumnOriginal: undefined,
   changeColumnDraft: defaultChangeColumnDraft(),
   newColumn: defaultNewColumnDraft(),
+  addTableSchema: "dbo",
+  addTableName: "",
+  dropTableTarget: undefined,
+  dropTableWarning: undefined,
   message: undefined,
 });
 
@@ -89,6 +99,10 @@ export function resetEditSelection(session: EditSessionState): EditSessionState 
     changeColumnOriginal: undefined,
     changeColumnDraft: defaultChangeColumnDraft(),
     newColumn: defaultNewColumnDraft(),
+    addTableSchema: "dbo",
+    addTableName: "",
+    dropTableTarget: undefined,
+    dropTableWarning: undefined,
     message: undefined,
   };
 }

@@ -16,6 +16,7 @@ export interface TableNodeData extends Record<string, unknown> {
   removeColumnTarget: ColumnRef | undefined;
   renameColumnTarget: ColumnRef | undefined;
   changeColumnTarget: ColumnRef | undefined;
+  dropTableTarget: string | undefined;
   onColumnSelect: (tableKey: string, columnName: string) => void;
   onTableSelect: (tableKey: string) => void;
 }
@@ -40,8 +41,12 @@ export function TableNode({ data }: NodeProps) {
   const isAddColumnTarget =
     nodeData.editMode === "addColumn" &&
     nodeData.addColumnTableKey === nodeData.tableKey;
+  const isDropTableTarget =
+    nodeData.editMode === "dropTable" &&
+    nodeData.dropTableTarget === nodeData.tableKey;
   const headerSelectable =
-    nodeData.editMode === "addColumn" && !nodeData.readOnly;
+    (nodeData.editMode === "addColumn" || nodeData.editMode === "dropTable") &&
+    !nodeData.readOnly;
 
   return (
     <div className={`table-node${nodeData.readOnly ? " table-node--readonly" : ""}`}>
@@ -51,7 +56,7 @@ export function TableNode({ data }: NodeProps) {
         className={[
           "table-node__header",
           headerSelectable ? "table-node__header--selectable" : "",
-          isAddColumnTarget ? "table-node__header--selected" : "",
+          isAddColumnTarget || isDropTableTarget ? "table-node__header--selected" : "",
         ]
           .filter(Boolean)
           .join(" ")}

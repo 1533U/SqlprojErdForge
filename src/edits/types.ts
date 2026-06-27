@@ -38,6 +38,19 @@ export interface ChangeColumnParams {
   nullable: boolean;
 }
 
+export interface AddTableParams {
+  schema: string;
+  tableName: string;
+  /** Relative folder for the build item, e.g. "purple". Empty = project root. */
+  includeFolder?: string;
+  layoutX?: number;
+  layoutY?: number;
+}
+
+export interface DropTableParams {
+  tableKey: string;
+}
+
 export interface FileEditCandidate {
   /** Absolute path to the on-disk .sql file. */
   absPath: string;
@@ -49,6 +62,10 @@ export interface FileEditCandidate {
   candidateContent: string;
   /** Content hash at preview time — used to detect conflicts on apply. */
   originalRevision: string;
+  /** When true, apply creates the file instead of replacing existing content. */
+  isNewFile?: boolean;
+  /** When true, apply deletes the file instead of replacing content. */
+  isDeleteFile?: boolean;
 }
 
 export type EditValidationResult =

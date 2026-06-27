@@ -35,5 +35,5 @@ Each slice is ≤1 session; run the listed verify commands before merging.
 
 ## Next (post-refactor)
 
-- **P3-5** add table — register as sixth edit operation.
+- **P3-7** rename table — register as eighth edit operation.
 - Parser decomposition (`src/core/parse/`) when P0-14 allowlist work starts.

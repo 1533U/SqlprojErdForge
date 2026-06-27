@@ -7,6 +7,9 @@ import {
   selectColumnForRemove,
   selectColumnForRename,
   selectTableForAddColumn,
+  selectTableForDrop,
+  validateAddTableForm,
+  inboundFkWarningForDrop,
 } from "../../src/edits/editInteraction";
 import { ErdCanvas } from "./canvas/ErdCanvas";
 import type {
@@ -74,17 +77,47 @@ export function App() {
     [],
   );
 
+  const onAddTableChange = useCallback(
+    (patch: Partial<Pick<EditSessionState, "addTableSchema" | "addTableName">>) => {
+      setEdit((current) => ({
+        ...current,
+        message: undefined,
+        ...patch,
+      }));
+    },
+    [],
+  );
+
   const onTableSelect = useCallback(
     (tableKey: string) => {
       setEdit((current) => {
-        if (current.mode !== "addColumn") return current;
-
         const table = payload?.tables.find((t) => t.key === tableKey);
-        const result = selectTableForAddColumn(table, tableKey);
-        if (!result.ok) {
-          return { ...current, message: result.message };
+
+        if (current.mode === "addColumn") {
+          const result = selectTableForAddColumn(table, tableKey);
+          if (!result.ok) {
+            return { ...current, message: result.message };
+          }
+          return { ...current, message: undefined, addColumnTableKey: result.tableKey };
         }
-        return { ...current, message: undefined, addColumnTableKey: result.tableKey };
+
+        if (current.mode === "dropTable") {
+          const result = selectTableForDrop(table, tableKey);
+          if (!result.ok) {
+            return { ...current, message: result.message };
+          }
+          const dropTableWarning = payload
+            ? inboundFkWarningForDrop(payload.edges, result.tableKey)
+            : undefined;
+          return {
+            ...current,
+            message: undefined,
+            dropTableTarget: result.tableKey,
+            dropTableWarning,
+          };
+        }
+
+        return current;
       });
     },
     [payload],
@@ -249,6 +282,39 @@ export function App() {
     });
   }, []);
 
+  const onConfirmAddTable = useCallback(() => {
+    setEdit((current) => {
+      const tables = payload?.tables ?? [];
+      const result = validateAddTableForm(
+        tables,
+        current.addTableSchema,
+        current.addTableName,
+      );
+      if (!result.ok) {
+        return { ...current, message: result.message };
+      }
+      vscode.postMessage({
+        type: "addTable",
+        intent: {
+          schema: current.addTableSchema.trim(),
+          tableName: current.addTableName.trim(),
+        },
+      });
+      return { ...current, message: undefined };
+    });
+  }, [payload]);
+
+  const onConfirmDropTable = useCallback(() => {
+    setEdit((current) => {
+      if (!current.dropTableTarget) return current;
+      vscode.postMessage({
+        type: "dropTable",
+        intent: { tableKey: current.dropTableTarget },
+      });
+      return { ...current, message: undefined };
+    });
+  }, []);
+
   useEffect(() => {
     const onMessage = (event: MessageEvent<HostToWebviewMessage>): void => {
       const message = event.data;
@@ -346,6 +412,20 @@ export function App() {
         >
           {edit.mode === "changeColumn" ? "Changing column…" : "Change column"}
         </button>
+        <button
+          type="button"
+          className={`erdforge-btn${edit.mode === "addTable" ? " erdforge-btn--active" : ""}`}
+          onClick={() => startEditMode("addTable")}
+        >
+          {edit.mode === "addTable" ? "Adding table…" : "Add table"}
+        </button>
+        <button
+          type="button"
+          className={`erdforge-btn${edit.mode === "dropTable" ? " erdforge-btn--active" : ""}`}
+          onClick={() => startEditMode("dropTable")}
+        >
+          {edit.mode === "dropTable" ? "Dropping table…" : "Drop table"}
+        </button>
       </header>
       <div className="erdforge-canvas">
         <ReactFlowProvider>
@@ -361,8 +441,11 @@ export function App() {
             onConfirmRemoveColumn={onConfirmRemoveColumn}
             onConfirmRenameColumn={onConfirmRenameColumn}
             onConfirmChangeColumn={onConfirmChangeColumn}
+            onConfirmAddTable={onConfirmAddTable}
+            onConfirmDropTable={onConfirmDropTable}
             onRenameNewNameChange={onRenameNewNameChange}
             onChangeColumnDraftChange={onChangeColumnDraftChange}
+            onAddTableChange={onAddTableChange}
             onCancelEdit={cancelEditMode}
           />
         </ReactFlowProvider>

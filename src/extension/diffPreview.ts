@@ -2,7 +2,8 @@
  * Diff editor preview with Apply / Discard (P3-8 / docs/06-edit-ux.md option 1).
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { dirname } from "node:path";
 import * as vscode from "vscode";
 import { contentRevision } from "../edits/paths.ts";
 import type { FileEditCandidate } from "../edits/types.ts";
@@ -134,11 +135,34 @@ export class DiffPreviewController {
 
     const { candidate, title } = pending;
     let currentContent: string;
-    try {
-      currentContent = readFileSync(candidate.absPath, "utf8");
-    } catch {
-      void vscode.window.showErrorMessage("ErdForge: source file no longer exists.");
-      return;
+    if (candidate.isNewFile) {
+      if (existsSync(candidate.absPath)) {
+        void vscode.window.showWarningMessage(
+          "ErdForge: the file was created since the preview was generated. Discard and retry the edit from the ERD.",
+        );
+        return;
+      }
+      currentContent = "";
+    } else if (candidate.isDeleteFile) {
+      if (!existsSync(candidate.absPath)) {
+        void vscode.window.showWarningMessage(
+          "ErdForge: the file was already deleted since the preview was generated. Discard and retry the edit from the ERD.",
+        );
+        return;
+      }
+      try {
+        currentContent = readFileSync(candidate.absPath, "utf8");
+      } catch {
+        void vscode.window.showErrorMessage("ErdForge: source file no longer exists.");
+        return;
+      }
+    } else {
+      try {
+        currentContent = readFileSync(candidate.absPath, "utf8");
+      } catch {
+        void vscode.window.showErrorMessage("ErdForge: source file no longer exists.");
+        return;
+      }
     }
 
     if (contentRevision(currentContent) !== candidate.originalRevision) {
@@ -149,20 +173,33 @@ export class DiffPreviewController {
     }
 
     const uri = vscode.Uri.file(candidate.absPath);
-    const doc = await vscode.workspace.openTextDocument(uri);
-    const fullRange = new vscode.Range(
-      doc.positionAt(0),
-      doc.positionAt(doc.getText().length),
-    );
     const edit = new vscode.WorkspaceEdit();
-    edit.replace(uri, fullRange, candidate.candidateContent);
+
+    if (candidate.isDeleteFile) {
+      edit.deleteFile(uri, { ignoreIfNotExists: false });
+    } else if (candidate.isNewFile) {
+      mkdirSync(dirname(candidate.absPath), { recursive: true });
+      edit.createFile(uri, { overwrite: false });
+      edit.insert(uri, new vscode.Position(0, 0), candidate.candidateContent);
+    } else {
+      const doc = await vscode.workspace.openTextDocument(uri);
+      const fullRange = new vscode.Range(
+        doc.positionAt(0),
+        doc.positionAt(doc.getText().length),
+      );
+      edit.replace(uri, fullRange, candidate.candidateContent);
+    }
+
     const applied = await vscode.workspace.applyEdit(edit);
     if (!applied) {
       void vscode.window.showErrorMessage("ErdForge: failed to apply edit.");
       return;
     }
 
-    await doc.save();
+    if (!candidate.isDeleteFile) {
+      const doc = await vscode.workspace.openTextDocument(uri);
+      await doc.save();
+    }
     markEditApplied();
 
     const sequence = this.pendingSequence;

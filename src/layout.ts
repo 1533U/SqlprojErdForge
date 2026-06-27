@@ -63,3 +63,8 @@ export function applyLayoutUpdate(
     },
   };
 }
+
+export function removeLayoutEntry(layout: LayoutFile, tableKey: string): LayoutFile {
+  const { [tableKey]: _removed, ...tables } = layout.tables;
+  return { version: 1, tables };
+}

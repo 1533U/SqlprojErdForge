@@ -3,8 +3,7 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "types": ["react", "react-dom"],
-    "allowImportingTsExtensions": false
+    "types": ["react", "react-dom"]
   },
-  "include": ["webview/src/**/*.ts", "webview/src/**/*.tsx", "src/protocol/**/*.ts", "src/edits/naming.ts"]
+  "include": ["webview/src/**/*.ts", "webview/src/**/*.tsx", "src/protocol/**/*.ts", "src/edits/naming.ts", "src/edits/editInteraction.ts", "src/edits/memberChecks.ts", "src/model.ts"]
 }

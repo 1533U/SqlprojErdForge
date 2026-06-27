@@ -51,8 +51,11 @@ export function ErdCanvas({
   onConfirmRemoveColumn,
   onConfirmRenameColumn,
   onConfirmChangeColumn,
+  onConfirmAddTable,
+  onConfirmDropTable,
   onRenameNewNameChange,
   onChangeColumnDraftChange,
+  onAddTableChange,
   onCancelEdit,
 }: {
   payload: GraphPayload;
@@ -66,8 +69,11 @@ export function ErdCanvas({
   onConfirmRemoveColumn: () => void;
   onConfirmRenameColumn: () => void;
   onConfirmChangeColumn: () => void;
+  onConfirmAddTable: () => void;
+  onConfirmDropTable: () => void;
   onRenameNewNameChange: (name: string) => void;
   onChangeColumnDraftChange: (patch: Partial<EditSessionState["changeColumnDraft"]>) => void;
+  onAddTableChange: (patch: Partial<Pick<EditSessionState, "addTableSchema" | "addTableName">>) => void;
   onCancelEdit: () => void;
 }) {
   const initial = useMemo(
@@ -111,8 +117,11 @@ export function ErdCanvas({
         onConfirmRemoveColumn={onConfirmRemoveColumn}
         onConfirmRenameColumn={onConfirmRenameColumn}
         onConfirmChangeColumn={onConfirmChangeColumn}
+        onConfirmAddTable={onConfirmAddTable}
+        onConfirmDropTable={onConfirmDropTable}
         onRenameNewNameChange={onRenameNewNameChange}
         onChangeColumnDraftChange={onChangeColumnDraftChange}
+        onAddTableChange={onAddTableChange}
         onCancel={onCancelEdit}
       />
       <ReactFlow

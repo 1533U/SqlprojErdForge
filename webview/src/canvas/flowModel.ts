@@ -46,6 +46,7 @@ export function payloadToFlow(
         removeColumnTarget: edit.removeColumnTarget,
         renameColumnTarget: edit.renameColumnTarget,
         changeColumnTarget: edit.changeColumnTarget,
+        dropTableTarget: edit.dropTableTarget,
         onColumnSelect,
         onTableSelect,
       },

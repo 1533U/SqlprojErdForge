@@ -8,3 +8,11 @@ export function tableShortName(tableKey: string): string {
 export function suggestForeignKeyName(fromTableKey: string, toTableKey: string): string {
   return `FK_${tableShortName(fromTableKey)}_${tableShortName(toTableKey)}`;
 }
+
+export function suggestPrimaryKeyName(tableName: string): string {
+  return `PK_${tableName}`;
+}
+
+export function suggestIdColumnName(tableName: string): string {
+  return `${tableName}_id`;
+}
