@@ -3,7 +3,7 @@
 > The single place to learn "where are we?". Keep this current. See the update routine in
 > [`../AGENTS.md`](../AGENTS.md).
 
-**Last updated:** 2026-06-27
+**Last updated:** 2026-06-28
 **Current phase:** Phase 4 — guardrails (`P4-1`, `P4-2`, `P0-14a`, **`P4-3`** done); next: **`P4-4`** or optional **`P0-14b`**
 **Overall state:** Phase 0–2 complete. **Phase 3 complete.** **Phase 4 guardrails:** format
 conformance (`P4-1`), file-role discovery filter (`P0-14a`), DACPAC CI backstop on fixtures
@@ -158,6 +158,12 @@ Optional follow-up: column-modifier allowlist triage (`P0-14b`).
     ([`src/edits/batchCandidates.ts`](../src/edits/batchCandidates.ts)).
   - Retired sequential `1/N` diff stepper. Plan: [`11-p4-3-refactor-preview-plan.md`](11-p4-3-refactor-preview-plan.md).
   - `npm run verify:p3` extended with batch validation checks.
+- **Health check + refactor** (2026-06-28): all gates green
+  (`typecheck`, `compile`, `spike`, `verify:p1/p3/p014/format`). Generic edit dispatch —
+  [`src/extension/editDispatch.ts`](../src/extension/editDispatch.ts) derives the edit
+  message-type set from the registry and collapses the eight-case switch (slice 10 in
+  [`08-refactor-plan.md`](08-refactor-plan.md)); restored the missing Phase 2 heading in
+  [`07-roadmap.md`](07-roadmap.md). Behavior unchanged.
 
 ## In progress
 

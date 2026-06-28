@@ -48,6 +48,8 @@ criterion so we never build UI on top of an unproven foundation.
 > **Status (2026-06-25):** complete — verified headlessly via `npm run verify:p1` on fixtures
 > and the real OSConnectWeylandtsDB project (~96 tables, 105 in-project FK edges).
 
+## Phase 2 — Column comments on the diagram
+
 **Goal:** make comments visible, delivering the "show comments on the ERD" feature.
 
 - Render `trailingComment` (and optionally `leadingComments`) as column descriptions

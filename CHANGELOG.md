@@ -27,6 +27,13 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 - **P0-15 — canonical format rules:** C4.1–C4.8 in `docs/03-sql-conventions.md`; [ADR-0013](docs/decisions/ADR-0013-canonical-format-rules.md) pins emitter output as the spec for `P4-1`.
 
 ### Changed
+- **Refactor — generic edit dispatch:** `src/extension/editDispatch.ts` now derives the edit
+  message-type set from the edit registry (`editOperations`) and collapses the eight-case
+  `prepareEditFromMessage` switch into one generic call; `erdPanel.handleEditMessage` uses the
+  exported `EditMessage` type instead of an inline eight-member union. Single source of truth for
+  the op list; behavior unchanged (`npm run verify:p3`, typecheck, compile green).
+- **Docs:** restored the missing `## Phase 2 — Column comments on the diagram` heading in
+  `docs/07-roadmap.md`.
 - **Phase 3 close-out:** consolidated `includeAbsPath` in `src/edits/paths.ts`; deduped inbound-FK
   lookup in `memberChecks.ts`; aligned webview rename/add-table validation messages with server;
   extended `verify:p3` rename-table checks for schema change; synced STATUS, backlog, roadmap,

@@ -30,6 +30,7 @@ Each slice is ≤1 session; run the listed verify commands before merging.
 | 7 | Shared `editInteraction.ts` | done | verify:p3 |
 | 8 | Decompose `graph.ts` → `diagram/` | done | spike, verify:p1 |
 | 9 | Edit operation registry | done | verify:p3 |
+| 10 | Generic edit dispatch (derive op list from registry; collapse `editDispatch` switch) | done | verify:p3, typecheck, compile |
 
 **Full gate:** `npm run typecheck && npm run compile && npm run spike && npm run verify:p1 && npm run verify:p3 && npm run verify:p014 && npm run verify:format`
 

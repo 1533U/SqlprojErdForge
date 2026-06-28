@@ -1,92 +1,37 @@
 /**
  * Extension host — map webview edit messages to the edit registry.
+ *
+ * The set of edit message types is derived from the edit registry
+ * (`editOperations`), so adding an operation there is the single source of truth.
  */
 
 import type { ProjectModel } from "../model.ts";
-import { editPreviewTitle, prepareEdit, type EditIntentMap, type EditOperationId } from "../edits/registry.ts";
+import {
+  editOperations,
+  editPreviewTitle,
+  prepareEdit,
+  type EditIntentMap,
+  type EditOperationId,
+} from "../edits/registry.ts";
 import type { EditValidationResult } from "../edits/types.ts";
 import type { WebviewToHostMessage } from "../protocol/messages.ts";
 
-type EditMessage = Extract<
-  WebviewToHostMessage,
-  {
-    type:
-      | "addForeignKey"
-      | "addColumn"
-      | "removeColumn"
-      | "renameColumn"
-      | "changeColumn"
-      | "addTable"
-      | "dropTable"
-      | "renameTable";
-  }
->;
+export type EditMessage = Extract<WebviewToHostMessage, { type: EditOperationId }>;
 
-const EDIT_MESSAGE_TYPES: EditMessage["type"][] = [
-  "addForeignKey",
-  "addColumn",
-  "removeColumn",
-  "renameColumn",
-  "changeColumn",
-  "addTable",
-  "dropTable",
-  "renameTable",
-];
+const EDIT_MESSAGE_TYPES = new Set<string>(Object.keys(editOperations));
 
 export function isEditMessage(message: WebviewToHostMessage): message is EditMessage {
-  return EDIT_MESSAGE_TYPES.includes(message.type as EditMessage["type"]);
+  return EDIT_MESSAGE_TYPES.has(message.type);
 }
 
 export function prepareEditFromMessage(
   model: ProjectModel,
   message: EditMessage,
 ): { result: EditValidationResult; title: string } {
-  switch (message.type) {
-    case "addForeignKey":
-      return {
-        result: prepareEdit("addForeignKey", model, message.intent),
-        title: editPreviewTitle("addForeignKey", message.intent),
-      };
-    case "addColumn":
-      return {
-        result: prepareEdit("addColumn", model, message.intent),
-        title: editPreviewTitle("addColumn", message.intent),
-      };
-    case "removeColumn":
-      return {
-        result: prepareEdit("removeColumn", model, message.intent),
-        title: editPreviewTitle("removeColumn", message.intent),
-      };
-    case "renameColumn":
-      return {
-        result: prepareEdit("renameColumn", model, message.intent),
-        title: editPreviewTitle("renameColumn", message.intent),
-      };
-    case "changeColumn":
-      return {
-        result: prepareEdit("changeColumn", model, message.intent),
-        title: editPreviewTitle("changeColumn", message.intent),
-      };
-    case "addTable":
-      return {
-        result: prepareEdit("addTable", model, message.intent),
-        title: editPreviewTitle("addTable", message.intent),
-      };
-    case "dropTable":
-      return {
-        result: prepareEdit("dropTable", model, message.intent),
-        title: editPreviewTitle("dropTable", message.intent),
-      };
-    case "renameTable":
-      return {
-        result: prepareEdit("renameTable", model, message.intent),
-        title: editPreviewTitle("renameTable", message.intent),
-      };
-    default: {
-      const _exhaustive: never = message;
-      throw new Error(`Unhandled edit message: ${(_exhaustive as EditMessage).type}`);
-    }
-  }
+  return {
+    result: prepareEdit(message.type, model, message.intent),
+    title: editPreviewTitle(message.type, message.intent),
+  };
 }
 
 export type { EditIntentMap, EditOperationId };

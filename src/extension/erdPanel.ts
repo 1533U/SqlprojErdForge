@@ -12,9 +12,9 @@ import type { ProjectModel } from "../model.ts";
 import { buildProjectModel } from "../project.ts";
 import { suggestForeignKeyName } from "../edits/addForeignKey.ts";
 import { ErdDiagnostics } from "./diagnostics.ts";
-import { isEditMessage, prepareEditFromMessage } from "./editDispatch.ts";
+import { isEditMessage, prepareEditFromMessage, type EditMessage } from "./editDispatch.ts";
 import { type DiffPreviewController } from "./diffPreview.ts";
-import { isWebviewToHostMessage, type HostToWebviewMessage, type WebviewToHostMessage } from "./messages.ts";
+import { isWebviewToHostMessage, type HostToWebviewMessage } from "./messages.ts";
 import { watchSqlFiles } from "./watcher.ts";
 
 export class ErdPanel {
@@ -169,22 +169,7 @@ export class ErdPanel {
     }
   }
 
-  private async handleEditMessage(
-    message: Extract<
-      WebviewToHostMessage,
-      {
-        type:
-          | "addForeignKey"
-          | "addColumn"
-          | "removeColumn"
-          | "renameColumn"
-          | "changeColumn"
-          | "addTable"
-          | "dropTable"
-          | "renameTable";
-      }
-    >,
-  ): Promise<void> {
+  private async handleEditMessage(message: EditMessage): Promise<void> {
     if (!this.model) {
       this.postMessage({ type: "editResult", ok: false, message: "Model not loaded yet." });
       return;
