@@ -51,11 +51,13 @@ export function ErdCanvas({
   onConfirmRemoveColumn,
   onConfirmRenameColumn,
   onConfirmChangeColumn,
+  onConfirmEditComment,
   onConfirmAddTable,
   onConfirmDropTable,
   onConfirmRenameTable,
   onRenameNewNameChange,
   onChangeColumnDraftChange,
+  onEditCommentDraftChange,
   onAddTableChange,
   onRenameTableChange,
   onCancelEdit,
@@ -71,11 +73,13 @@ export function ErdCanvas({
   onConfirmRemoveColumn: () => void;
   onConfirmRenameColumn: () => void;
   onConfirmChangeColumn: () => void;
+  onConfirmEditComment: () => void;
   onConfirmAddTable: () => void;
   onConfirmDropTable: () => void;
   onConfirmRenameTable: () => void;
   onRenameNewNameChange: (name: string) => void;
   onChangeColumnDraftChange: (patch: Partial<EditSessionState["changeColumnDraft"]>) => void;
+  onEditCommentDraftChange: (comment: string) => void;
   onAddTableChange: (patch: Partial<Pick<EditSessionState, "addTableSchema" | "addTableName">>) => void;
   onRenameTableChange: (patch: Partial<Pick<EditSessionState, "renameTableSchema" | "renameTableNewName">>) => void;
   onCancelEdit: () => void;
@@ -121,11 +125,13 @@ export function ErdCanvas({
         onConfirmRemoveColumn={onConfirmRemoveColumn}
         onConfirmRenameColumn={onConfirmRenameColumn}
         onConfirmChangeColumn={onConfirmChangeColumn}
+        onConfirmEditComment={onConfirmEditComment}
         onConfirmAddTable={onConfirmAddTable}
         onConfirmDropTable={onConfirmDropTable}
         onConfirmRenameTable={onConfirmRenameTable}
         onRenameNewNameChange={onRenameNewNameChange}
         onChangeColumnDraftChange={onChangeColumnDraftChange}
+        onEditCommentDraftChange={onEditCommentDraftChange}
         onAddTableChange={onAddTableChange}
         onRenameTableChange={onRenameTableChange}
         onCancel={onCancelEdit}

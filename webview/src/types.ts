@@ -15,6 +15,7 @@ export type {
   AddTableIntent,
   DropTableIntent,
   ChangeColumnIntent,
+  EditCommentIntent,
   HostToWebviewMessage,
   RemoveColumnIntent,
   RenameColumnIntent,
@@ -60,6 +61,9 @@ export interface EditSessionState {
   changeColumnTarget: ColumnRef | undefined;
   changeColumnOriginal: ChangeColumnDraft | undefined;
   changeColumnDraft: ChangeColumnDraft;
+  editCommentTarget: ColumnRef | undefined;
+  editCommentOriginal: string | undefined;
+  editCommentDraft: string;
   newColumn: NewColumnDraft;
   addTableSchema: string;
   addTableName: string;
@@ -82,6 +86,9 @@ export const initialEditSession = (): EditSessionState => ({
   changeColumnTarget: undefined,
   changeColumnOriginal: undefined,
   changeColumnDraft: defaultChangeColumnDraft(),
+  editCommentTarget: undefined,
+  editCommentOriginal: undefined,
+  editCommentDraft: "",
   newColumn: defaultNewColumnDraft(),
   addTableSchema: "dbo",
   addTableName: "",
@@ -105,6 +112,9 @@ export function resetEditSelection(session: EditSessionState): EditSessionState 
     changeColumnTarget: undefined,
     changeColumnOriginal: undefined,
     changeColumnDraft: defaultChangeColumnDraft(),
+    editCommentTarget: undefined,
+    editCommentOriginal: undefined,
+    editCommentDraft: "",
     newColumn: defaultNewColumnDraft(),
     addTableSchema: "dbo",
     addTableName: "",

@@ -16,6 +16,7 @@ export type EditMode =
   | "removeColumn"
   | "renameColumn"
   | "changeColumn"
+  | "editComment"
   | "addTable"
   | "dropTable"
   | "renameTable";
@@ -230,6 +231,21 @@ export function selectColumnForChangeColumn(
   };
 }
 
+export function selectColumnForEditComment(
+  table: GraphTableView,
+  column: GraphColumnView,
+  currentComment: string | undefined,
+): { ok: true; target: ColumnRef; comment: string } | { ok: false; message: string } {
+  if (table.readOnly) {
+    return { ok: false, message: readOnlyTableMessage(table.key) };
+  }
+  return {
+    ok: true,
+    target: { tableKey: table.key, columnName: column.name },
+    comment: currentComment ?? "",
+  };
+}
+
 export interface ColumnRowEditState {
   isSelectable: boolean;
   isFkSource: boolean;
@@ -238,6 +254,7 @@ export interface ColumnRowEditState {
   isRemoveBlocked: boolean;
   isRenameTarget: boolean;
   isChangeColumnTarget: boolean;
+  isEditCommentTarget: boolean;
 }
 
 export function computeColumnRowEditState(
@@ -247,6 +264,7 @@ export function computeColumnRowEditState(
   removeColumnTarget: ColumnRef | undefined,
   renameColumnTarget: ColumnRef | undefined,
   changeColumnTarget: ColumnRef | undefined,
+  editCommentTarget: ColumnRef | undefined,
   tableKey: string,
   column: GraphColumnView,
 ): ColumnRowEditState {
@@ -271,6 +289,10 @@ export function computeColumnRowEditState(
     editMode === "changeColumn" &&
     changeColumnTarget?.tableKey === tableKey &&
     changeColumnTarget.columnName === column.name;
+  const isEditCommentTarget =
+    editMode === "editComment" &&
+    editCommentTarget?.tableKey === tableKey &&
+    editCommentTarget.columnName === column.name;
   const isRemoveBlocked =
     editMode === "removeColumn" && (column.isPrimaryKey || column.isForeignKey);
   const isFkSelectable =
@@ -281,15 +303,21 @@ export function computeColumnRowEditState(
     editMode === "removeColumn" && !readOnly && !isRemoveBlocked;
   const isRenameSelectable = editMode === "renameColumn" && !readOnly;
   const isChangeColumnSelectable = editMode === "changeColumn" && !readOnly;
+  const isEditCommentSelectable = editMode === "editComment" && !readOnly;
 
   return {
     isSelectable:
-      isFkSelectable || isRemoveSelectable || isRenameSelectable || isChangeColumnSelectable,
+      isFkSelectable ||
+      isRemoveSelectable ||
+      isRenameSelectable ||
+      isChangeColumnSelectable ||
+      isEditCommentSelectable,
     isFkSource,
     isFkTarget,
     isRemoveTarget,
     isRemoveBlocked,
     isRenameTarget,
     isChangeColumnTarget,
+    isEditCommentTarget,
   };
 }

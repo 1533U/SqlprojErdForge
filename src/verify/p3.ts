@@ -9,6 +9,7 @@ import { runAddColumnChecks } from "./p3/addColumn.ts";
 import { runAddFkChecks } from "./p3/addForeignKey.ts";
 import { runRemoveColumnChecks } from "./p3/removeColumn.ts";
 import { runChangeColumnChecks } from "./p3/changeColumn.ts";
+import { runEditCommentChecks } from "./p3/editComment.ts";
 import { runAddTableChecks } from "./p3/addTable.ts";
 import { runDropTableChecks } from "./p3/dropTable.ts";
 import { runRenameColumnChecks } from "./p3/renameColumn.ts";
@@ -35,6 +36,9 @@ export function runVerifyP3(): void {
 
   console.log("\nChange column:");
   runChangeColumnChecks(h, model);
+
+  console.log("\nEdit comment:");
+  runEditCommentChecks(h, model);
 
   console.log("\nAdd table:");
   runAddTableChecks(h, model);

@@ -21,6 +21,7 @@ const EDIT_OPERATION_LABELS: Record<EditableMode, EditOperationLabel> = {
   removeColumn: { label: "Remove column", activeLabel: "Removing column…" },
   renameColumn: { label: "Rename column", activeLabel: "Renaming column…" },
   changeColumn: { label: "Change column", activeLabel: "Changing column…" },
+  editComment: { label: "Edit comment", activeLabel: "Editing comment…" },
   addTable: { label: "Add table", activeLabel: "Adding table…" },
   dropTable: { label: "Drop table", activeLabel: "Dropping table…" },
   renameTable: { label: "Rename table", activeLabel: "Renaming table…" },

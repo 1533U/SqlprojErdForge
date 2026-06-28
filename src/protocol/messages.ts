@@ -13,6 +13,7 @@ import type {
   AddTableParams,
   ChangeColumnParams,
   DropTableParams,
+  EditCommentParams,
   EditIntentMap,
   EditOperationId,
   RemoveColumnParams,
@@ -25,6 +26,7 @@ export type AddColumnIntent = AddColumnParams;
 export type RemoveColumnIntent = RemoveColumnParams;
 export type RenameColumnIntent = RenameColumnParams;
 export type ChangeColumnIntent = ChangeColumnParams;
+export type EditCommentIntent = EditCommentParams;
 export type AddTableIntent = AddTableParams;
 export type DropTableIntent = DropTableParams;
 export type RenameTableIntent = RenameTableParams;
@@ -55,6 +57,7 @@ const EDIT_OP_IDS: Record<EditOperationId, true> = {
   removeColumn: true,
   renameColumn: true,
   changeColumn: true,
+  editComment: true,
   addTable: true,
   dropTable: true,
   renameTable: true,

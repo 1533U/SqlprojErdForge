@@ -16,6 +16,7 @@ export interface TableNodeData extends Record<string, unknown> {
   removeColumnTarget: ColumnRef | undefined;
   renameColumnTarget: ColumnRef | undefined;
   changeColumnTarget: ColumnRef | undefined;
+  editCommentTarget: ColumnRef | undefined;
   dropTableTarget: string | undefined;
   renameTableTarget: string | undefined;
   onColumnSelect: (tableKey: string, columnName: string) => void;
@@ -32,6 +33,7 @@ function rowClassNames(state: ReturnType<typeof computeColumnRowEditState>, edit
     state.isRemoveTarget ? "table-node__row--remove-target" : "",
     state.isRenameTarget ? "table-node__row--rename-target" : "",
     state.isChangeColumnTarget ? "table-node__row--change-target" : "",
+    state.isEditCommentTarget ? "table-node__row--comment-target" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -97,6 +99,7 @@ export function TableNode({ data }: NodeProps) {
             nodeData.removeColumnTarget,
             nodeData.renameColumnTarget,
             nodeData.changeColumnTarget,
+            nodeData.editCommentTarget,
             nodeData.tableKey,
             column,
           );

@@ -10,11 +10,13 @@ export function EditBanner({
   onConfirmRemoveColumn,
   onConfirmRenameColumn,
   onConfirmChangeColumn,
+  onConfirmEditComment,
   onConfirmAddTable,
   onConfirmDropTable,
   onConfirmRenameTable,
   onRenameNewNameChange,
   onChangeColumnDraftChange,
+  onEditCommentDraftChange,
   onAddTableChange,
   onRenameTableChange,
   onCancel,
@@ -26,11 +28,13 @@ export function EditBanner({
   onConfirmRemoveColumn: () => void;
   onConfirmRenameColumn: () => void;
   onConfirmChangeColumn: () => void;
+  onConfirmEditComment: () => void;
   onConfirmAddTable: () => void;
   onConfirmDropTable: () => void;
   onConfirmRenameTable: () => void;
   onRenameNewNameChange: (name: string) => void;
   onChangeColumnDraftChange: (patch: Partial<EditSessionState["changeColumnDraft"]>) => void;
+  onEditCommentDraftChange: (comment: string) => void;
   onAddTableChange: (patch: Partial<Pick<EditSessionState, "addTableSchema" | "addTableName">>) => void;
   onRenameTableChange: (patch: Partial<Pick<EditSessionState, "renameTableSchema" | "renameTableNewName">>) => void;
   onCancel: () => void;
@@ -194,6 +198,31 @@ export function EditBanner({
           edit.changeColumnDraft.dataType.trim().length > 0 &&
           (edit.changeColumnDraft.dataType.trim() !== edit.changeColumnOriginal.dataType ||
             edit.changeColumnDraft.nullable !== edit.changeColumnOriginal.nullable);
+      }
+      break;
+    case "editComment":
+      if (edit.editCommentTarget == null) {
+        body = <span>Click a column to edit its comment.</span>;
+      } else {
+        body = (
+          <span className="erdforge-edit-banner__form">
+            Comment <strong>{edit.editCommentTarget.tableKey}.{edit.editCommentTarget.columnName}</strong>
+            <label>
+              Comment
+              <input
+                type="text"
+                value={edit.editCommentDraft}
+                onChange={(event) => onEditCommentDraftChange(event.target.value)}
+                placeholder="trailing comment (blank to clear)"
+              />
+            </label>
+          </span>
+        );
+        confirmLabel = edit.editCommentDraft.trim() ? "Preview comment" : "Preview clear";
+        onConfirm = onConfirmEditComment;
+        confirmEnabled =
+          edit.editCommentOriginal != null &&
+          edit.editCommentDraft.trim() !== edit.editCommentOriginal.trim();
       }
       break;
     case "addTable":

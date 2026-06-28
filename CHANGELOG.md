@@ -8,6 +8,13 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 ## [Unreleased]
 
 ### Added
+- **P4-5 — edit comment text on the diagram:** ninth edit op `src/edits/editComment.ts` sets,
+  changes, or clears a column's trailing comment (blank input clears) via the same
+  preview→apply pipeline. Added through the single-source `EditIntentMap` so the registry,
+  host dispatch, wire protocol, and the **Edit comment** webview mode all derive from it;
+  `selectColumnForEditComment` prefills the field with the current comment. `npm run verify:p3`
+  extended with set/change/clear/no-op/missing/read-only headless checks on the `dbo.Customer`
+  comment-slots fixture.
 - **P4-6 — grouped edit toolbar menu:** `webview/src/EditMenu.tsx` collapses the eight
   header edit buttons into a single **Edit…** dropdown (trigger reflects the active mode;
   closes on outside-click / Escape). Operation labels live in a

@@ -38,6 +38,13 @@ export interface ChangeColumnParams {
   nullable: boolean;
 }
 
+export interface EditCommentParams {
+  tableKey: string;
+  columnName: string;
+  /** New trailing comment text; empty/whitespace removes the comment. */
+  comment: string;
+}
+
 export interface AddTableParams {
   schema: string;
   tableName: string;
@@ -95,6 +102,7 @@ export interface EditIntentMap {
   removeColumn: RemoveColumnParams;
   renameColumn: RenameColumnParams;
   changeColumn: ChangeColumnParams;
+  editComment: EditCommentParams;
   addTable: AddTableParams;
   dropTable: DropTableParams;
   renameTable: RenameTableParams;

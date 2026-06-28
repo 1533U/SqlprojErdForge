@@ -9,6 +9,7 @@ import { prepareAddForeignKey } from "./addForeignKey.ts";
 import { prepareAddTable } from "./addTable.ts";
 import { prepareRemoveColumn } from "./removeColumn.ts";
 import { prepareChangeColumn } from "./changeColumn.ts";
+import { prepareEditComment } from "./editComment.ts";
 import { prepareDropTable } from "./dropTable.ts";
 import { prepareRenameColumn } from "./renameColumn.ts";
 import { prepareRenameTable } from "./renameTable.ts";
@@ -50,6 +51,14 @@ export const editOperations: { [K in EditOperationId]: EditOperation<K> } = {
     prepare: prepareChangeColumn,
     previewTitle: (intent) =>
       `Change column ${intent.tableKey}.${intent.columnName} → ${intent.dataType} ${intent.nullable ? "NULL" : "NOT NULL"}`,
+  },
+  editComment: {
+    id: "editComment",
+    prepare: prepareEditComment,
+    previewTitle: (intent) =>
+      intent.comment.trim()
+        ? `Edit comment ${intent.tableKey}.${intent.columnName}`
+        : `Clear comment ${intent.tableKey}.${intent.columnName}`,
   },
   addTable: {
     id: "addTable",

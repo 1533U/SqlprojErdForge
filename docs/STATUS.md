@@ -4,14 +4,14 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-28
-**Current phase:** Phase 4 — guardrails (`P4-1`, `P4-2`, `P0-14a`, `P4-3`, `P4-4`, **`P4-6`** done);
-remaining: optional **`P4-5`**, **`P0-14b`**
-**Overall state:** Phase 0–2 complete. **Phase 3 complete.** **Phase 4 guardrails:** format
-conformance (`P4-1`), file-role discovery filter (`P0-14a`), DACPAC CI backstop on fixtures
-(`P4-2`), **atomic multi-file Refactor Preview** (`P4-3` — closes `P3-8` partial gap),
-**conflict handling on concurrent file changes** (`P4-4`), **grouped edit toolbar menu**
-(`P4-6`). Remaining Phase 4 items are optional polish: edit comment text (`P4-5`), allowlist
-triage (`P0-14b`).
+**Current phase:** Phase 4 — guardrails (`P4-1`, `P4-2`, `P0-14a`, `P4-3`, `P4-4`, `P4-5`,
+**`P4-6`** done); remaining: optional **`P0-14b`**
+**Overall state:** Phase 0–2 complete. **Phase 3 complete.** **Phase 4 essentially complete:**
+format conformance (`P4-1`), file-role discovery filter (`P0-14a`), DACPAC CI backstop on
+fixtures (`P4-2`), **atomic multi-file Refactor Preview** (`P4-3` — closes `P3-8` partial gap),
+**conflict handling on concurrent file changes** (`P4-4`), **edit comment text** (`P4-5` —
+ninth edit op), **grouped edit toolbar menu** (`P4-6`). Only optional column-modifier
+allowlist triage (`P0-14b`) remains.
 
 ## Done
 
@@ -174,6 +174,16 @@ triage (`P0-14b`).
   - Green gate **`npm run verify:p4`** ([`src/verify/p4/conflict.ts`](../src/verify/p4/conflict.ts)):
     real temp-file checks prove fail-closed for scenarios (a) single-file change, (b) stale
     batch member, (c) watcher refresh mid-edit. Added to CI.
+- **Phase 4 — edit comment text** (`P4-5`, 2026-06-28):
+  - Ninth edit op [`src/edits/editComment.ts`](../src/edits/editComment.ts): set, change, or
+    clear a column's `trailingComment` (blank input clears). Validates editable table, column
+    exists, and rejects no-ops. Registered in [`registry.ts`](../src/edits/registry.ts) and
+    derived everywhere via `EditIntentMap` (protocol, dispatch, EditMenu).
+  - Webview **Edit comment** mode: pick a column → text field prefilled with the current
+    comment → preview ([`EditBanner.tsx`](../webview/src/edit/EditBanner.tsx),
+    [`editInteraction.ts`](../src/edits/editInteraction.ts) `selectColumnForEditComment`).
+  - `npm run verify:p3` extended with set/change/clear/no-op/missing/read-only checks on the
+    `dbo.Customer` comment-slots fixture.
 - **Phase 4 — grouped edit toolbar menu** (`P4-6`, 2026-06-28):
   - [`webview/src/EditMenu.tsx`](../webview/src/EditMenu.tsx) collapses the eight header edit
     buttons into a single **Edit…** dropdown (trigger shows the active mode label). Operation
@@ -197,8 +207,7 @@ triage (`P0-14b`).
 
 ## Next up (immediate — start here next session)
 
-1. **P4-5** (optional) — edit comment text on the diagram.
-2. **P0-14b** (optional) — column-modifier allowlist triage on real project (~591 warnings).
+1. **P0-14b** (optional) — column-modifier allowlist triage on real project (~591 warnings).
 
 > Tip: `npm run spike`, `npm run verify:p1`, `npm run verify:p3`, `npm run verify:p4`,
 > `npm run verify:p014`, `npm run verify:format`, `npm run format:check`,

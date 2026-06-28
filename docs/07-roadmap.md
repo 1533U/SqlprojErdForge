@@ -89,7 +89,9 @@ registry in sync; per-op validate → clone → mutate → candidates pipeline.
 - Refactor Preview for multi-file edits — **done** (`P4-3`).
 - Conflict handling on concurrent file changes — **done** (`P4-4`); fail-closed content-hash
   detection + Recompute preview ([ADR-0014](decisions/ADR-0014-conflict-detection-recompute.md)).
-- Editing affordances: edit comment text on the diagram, reorder via explicit action, etc.
+- Editing affordances: edit comment text on the diagram — **done** (`P4-5`); grouped edit
+  toolbar menu — **done** (`P4-6`). Further affordances (reorder via explicit action, etc.)
+  remain optional.
 
 **Exit criteria:** CI enforces conventions; multi-file edits are safe and previewable.
 

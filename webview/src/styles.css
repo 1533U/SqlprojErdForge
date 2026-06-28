@@ -320,6 +320,10 @@ body,
   background: color-mix(in srgb, var(--vscode-textLink-foreground, #3794ff) 22%, transparent);
 }
 
+.table-node__row--comment-target {
+  background: color-mix(in srgb, var(--vscode-charts-green, #89d185) 22%, transparent);
+}
+
 .table-node__description {
   padding: 0 10px 4px 18px;
   font-size: 10px;

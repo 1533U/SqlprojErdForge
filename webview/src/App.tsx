@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   selectColumnForAddFk,
   selectColumnForChangeColumn,
+  selectColumnForEditComment,
   selectColumnForRemove,
   selectColumnForRename,
   selectTableForAddColumn,
@@ -79,6 +80,14 @@ export function App() {
     },
     [],
   );
+
+  const onEditCommentDraftChange = useCallback((comment: string) => {
+    setEdit((current) => ({
+      ...current,
+      message: undefined,
+      editCommentDraft: comment,
+    }));
+  }, []);
 
   const onAddTableChange = useCallback(
     (patch: Partial<Pick<EditSessionState, "addTableSchema" | "addTableName">>) => {
@@ -219,6 +228,20 @@ export function App() {
           };
         }
 
+        if (current.mode === "editComment") {
+          const result = selectColumnForEditComment(table, column, column.description);
+          if (!result.ok) {
+            return { ...current, message: result.message };
+          }
+          return {
+            ...current,
+            message: undefined,
+            editCommentTarget: result.target,
+            editCommentOriginal: result.comment,
+            editCommentDraft: result.comment,
+          };
+        }
+
         return { ...current, message: undefined };
       });
     },
@@ -304,6 +327,25 @@ export function App() {
           columnName: current.changeColumnTarget.columnName,
           dataType,
           nullable: current.changeColumnDraft.nullable,
+        },
+      });
+      return { ...current, message: undefined };
+    });
+  }, []);
+
+  const onConfirmEditComment = useCallback(() => {
+    setEdit((current) => {
+      if (!current.editCommentTarget) return current;
+      if (current.editCommentOriginal == null) return current;
+      if (current.editCommentDraft.trim() === current.editCommentOriginal.trim()) {
+        return current;
+      }
+      vscode.postMessage({
+        type: "editComment",
+        intent: {
+          tableKey: current.editCommentTarget.tableKey,
+          columnName: current.editCommentTarget.columnName,
+          comment: current.editCommentDraft.trim(),
         },
       });
       return { ...current, message: undefined };
@@ -446,11 +488,13 @@ export function App() {
             onConfirmRemoveColumn={onConfirmRemoveColumn}
             onConfirmRenameColumn={onConfirmRenameColumn}
             onConfirmChangeColumn={onConfirmChangeColumn}
+            onConfirmEditComment={onConfirmEditComment}
             onConfirmAddTable={onConfirmAddTable}
             onConfirmDropTable={onConfirmDropTable}
             onConfirmRenameTable={onConfirmRenameTable}
             onRenameNewNameChange={onRenameNewNameChange}
             onChangeColumnDraftChange={onChangeColumnDraftChange}
+            onEditCommentDraftChange={onEditCommentDraftChange}
             onAddTableChange={onAddTableChange}
             onRenameTableChange={onRenameTableChange}
             onCancelEdit={cancelEditMode}
