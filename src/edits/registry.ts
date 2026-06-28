@@ -12,38 +12,9 @@ import { prepareChangeColumn } from "./changeColumn.ts";
 import { prepareDropTable } from "./dropTable.ts";
 import { prepareRenameColumn } from "./renameColumn.ts";
 import { prepareRenameTable } from "./renameTable.ts";
-import type {
-  AddColumnParams,
-  AddForeignKeyParams,
-  AddTableParams,
-  ChangeColumnParams,
-  DropTableParams,
-  EditValidationResult,
-  RemoveColumnParams,
-  RenameColumnParams,
-  RenameTableParams,
-} from "./types.ts";
+import type { EditIntentMap, EditOperationId, EditValidationResult } from "./types.ts";
 
-export type EditOperationId =
-  | "addForeignKey"
-  | "addColumn"
-  | "removeColumn"
-  | "renameColumn"
-  | "changeColumn"
-  | "addTable"
-  | "dropTable"
-  | "renameTable";
-
-export type EditIntentMap = {
-  addForeignKey: AddForeignKeyParams;
-  addColumn: AddColumnParams;
-  removeColumn: RemoveColumnParams;
-  renameColumn: RenameColumnParams;
-  changeColumn: ChangeColumnParams;
-  addTable: AddTableParams;
-  dropTable: DropTableParams;
-  renameTable: RenameTableParams;
-};
+export type { EditIntentMap, EditOperationId } from "./types.ts";
 
 export interface EditOperation<K extends EditOperationId = EditOperationId> {
   id: K;

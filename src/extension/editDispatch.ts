@@ -14,15 +14,15 @@ import {
   type EditOperationId,
 } from "../edits/registry.ts";
 import type { EditValidationResult } from "../edits/types.ts";
-import type { WebviewToHostMessage } from "../protocol/messages.ts";
-
-export type EditMessage = Extract<WebviewToHostMessage, { type: EditOperationId }>;
+import type { EditMessage, WebviewToHostMessage } from "../protocol/messages.ts";
 
 const EDIT_MESSAGE_TYPES = new Set<string>(Object.keys(editOperations));
 
 export function isEditMessage(message: WebviewToHostMessage): message is EditMessage {
   return EDIT_MESSAGE_TYPES.has(message.type);
 }
+
+export type { EditMessage };
 
 export function prepareEditFromMessage(
   model: ProjectModel,

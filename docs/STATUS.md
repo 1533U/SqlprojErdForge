@@ -159,11 +159,15 @@ Optional follow-up: column-modifier allowlist triage (`P0-14b`).
   - Retired sequential `1/N` diff stepper. Plan: [`11-p4-3-refactor-preview-plan.md`](11-p4-3-refactor-preview-plan.md).
   - `npm run verify:p3` extended with batch validation checks.
 - **Health check + refactor** (2026-06-28): all gates green
-  (`typecheck`, `compile`, `spike`, `verify:p1/p3/p014/format`). Generic edit dispatch —
-  [`src/extension/editDispatch.ts`](../src/extension/editDispatch.ts) derives the edit
-  message-type set from the registry and collapses the eight-case switch (slice 10 in
-  [`08-refactor-plan.md`](08-refactor-plan.md)); restored the missing Phase 2 heading in
-  [`07-roadmap.md`](07-roadmap.md). Behavior unchanged.
+  (`typecheck`, `compile`, `spike`, `verify:p1/p3/p014/format`). Two behavior-preserving
+  slices give the edit-op set a single source of truth:
+  - **Slice 10** — generic edit dispatch: [`src/extension/editDispatch.ts`](../src/extension/editDispatch.ts)
+    derives the message-type set from the registry and collapses the eight-case switch.
+  - **Slice 11** — `EditIntentMap`/`EditOperationId` moved to [`src/edits/types.ts`](../src/edits/types.ts);
+    [`src/protocol/messages.ts`](../src/protocol/messages.ts) derives the wire edit variants from it
+    and guards them with a compile-enforced `Record<EditOperationId, true>`.
+
+  Also restored the missing Phase 2 heading in [`07-roadmap.md`](07-roadmap.md).
 
 ## In progress
 

@@ -83,3 +83,21 @@ export interface FileEditCandidate {
 export type EditValidationResult =
   | { ok: true; candidates: FileEditCandidate[] }
   | { ok: false; message: string };
+
+/**
+ * Single source of truth mapping each edit operation id to its intent params.
+ * The registry, host dispatch, and wire protocol all derive from this so adding
+ * an operation here forces every consumer to handle it.
+ */
+export interface EditIntentMap {
+  addForeignKey: AddForeignKeyParams;
+  addColumn: AddColumnParams;
+  removeColumn: RemoveColumnParams;
+  renameColumn: RenameColumnParams;
+  changeColumn: ChangeColumnParams;
+  addTable: AddTableParams;
+  dropTable: DropTableParams;
+  renameTable: RenameTableParams;
+}
+
+export type EditOperationId = keyof EditIntentMap;

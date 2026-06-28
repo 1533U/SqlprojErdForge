@@ -1,5 +1,9 @@
 /**
  * Webview ↔ extension host message protocol (shared by host and webview).
+ *
+ * The edit message variants and the runtime guard are derived from
+ * `EditIntentMap` (see `../edits/types.ts`) so the edit operation set has a
+ * single source of truth.
  */
 
 import type { GraphPayload } from "./graphPayload.ts";
@@ -9,6 +13,8 @@ import type {
   AddTableParams,
   ChangeColumnParams,
   DropTableParams,
+  EditIntentMap,
+  EditOperationId,
   RemoveColumnParams,
   RenameColumnParams,
   RenameTableParams,
@@ -23,6 +29,11 @@ export type AddTableIntent = AddTableParams;
 export type DropTableIntent = DropTableParams;
 export type RenameTableIntent = RenameTableParams;
 
+/** `{ type: "addColumn"; intent: AddColumnParams } | …` for every edit op. */
+export type EditMessage = {
+  [K in EditOperationId]: { type: K; intent: EditIntentMap[K] };
+}[EditOperationId];
+
 export type HostToWebviewMessage =
   | { type: "graph"; payload: GraphPayload }
   | { type: "error"; message: string }
@@ -32,31 +43,27 @@ export type HostToWebviewMessage =
 export type WebviewToHostMessage =
   | { type: "ready" }
   | { type: "layoutUpdate"; tableKey: string; x: number; y: number }
-  | { type: "addForeignKey"; intent: AddForeignKeyIntent }
-  | { type: "addColumn"; intent: AddColumnIntent }
-  | { type: "removeColumn"; intent: RemoveColumnIntent }
-  | { type: "renameColumn"; intent: RenameColumnIntent }
-  | { type: "changeColumn"; intent: ChangeColumnIntent }
-  | { type: "addTable"; intent: AddTableIntent }
-  | { type: "dropTable"; intent: DropTableIntent }
-  | { type: "renameTable"; intent: RenameTableIntent };
+  | EditMessage;
+
+/**
+ * Exhaustive set of edit-op ids. Typed as `Record<EditOperationId, true>` so a
+ * new op in `EditIntentMap` is a compile error until listed here.
+ */
+const EDIT_OP_IDS: Record<EditOperationId, true> = {
+  addForeignKey: true,
+  addColumn: true,
+  removeColumn: true,
+  renameColumn: true,
+  changeColumn: true,
+  addTable: true,
+  dropTable: true,
+  renameTable: true,
+};
 
 export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMessage {
   if (!value || typeof value !== "object") return false;
-  const msg = value as { type?: string };
-  switch (msg.type) {
-    case "ready":
-    case "layoutUpdate":
-    case "addForeignKey":
-    case "addColumn":
-    case "removeColumn":
-    case "renameColumn":
-    case "changeColumn":
-    case "addTable":
-    case "dropTable":
-    case "renameTable":
-      return true;
-    default:
-      return false;
-  }
+  const type = (value as { type?: string }).type;
+  if (type === undefined) return false;
+  if (type === "ready" || type === "layoutUpdate") return true;
+  return Object.prototype.hasOwnProperty.call(EDIT_OP_IDS, type);
 }

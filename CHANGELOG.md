@@ -27,6 +27,12 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 - **P0-15 — canonical format rules:** C4.1–C4.8 in `docs/03-sql-conventions.md`; [ADR-0013](docs/decisions/ADR-0013-canonical-format-rules.md) pins emitter output as the spec for `P4-1`.
 
 ### Changed
+- **Refactor — protocol derives the edit-op set:** `EditIntentMap` / `EditOperationId` now live in
+  `src/edits/types.ts` (single source of truth). `src/protocol/messages.ts` derives the
+  `WebviewToHostMessage` edit variants from `EditIntentMap` via a mapped type and guards them with a
+  `Record<EditOperationId, true>` set, so a new op is a compile error until handled everywhere;
+  `editDispatch` reuses the protocol `EditMessage` type. Behavior unchanged (typecheck, compile,
+  `verify:p1/p3/p014` green).
 - **Refactor — generic edit dispatch:** `src/extension/editDispatch.ts` now derives the edit
   message-type set from the edit registry (`editOperations`) and collapses the eight-case
   `prepareEditFromMessage` switch into one generic call; `erdPanel.handleEditMessage` uses the
