@@ -56,7 +56,18 @@ function applyAddColumnMutation(table: Table, params: AddColumnParams): void {
       ? { trailingComment: params.trailingComment.trim() }
       : {}),
   };
-  table.members.splice(insertIndexForNewColumn(table), 0, column);
+  table.members.splice(columnInsertIndex(table, params.beforeColumnName), 0, column);
+}
+
+/** Insert before the named column when given (and present as a column); else before constraints. */
+function columnInsertIndex(table: Table, beforeColumnName: string | undefined): number {
+  if (beforeColumnName) {
+    const idx = table.members.findIndex(
+      (m) => m.kind === "column" && m.name === beforeColumnName,
+    );
+    if (idx !== -1) return idx;
+  }
+  return insertIndexForNewColumn(table);
 }
 
 function validateAddColumn(

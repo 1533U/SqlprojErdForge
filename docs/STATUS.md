@@ -4,15 +4,14 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-28
-**Current phase:** **Phase 4 fully closed** (`P4-1`, `P4-2`, `P0-14a`, `P4-3`, `P4-4`, `P4-5`,
-`P4-6`, `P0-14b` all done).
-**Overall state:** Phase 0–2 complete. **Phase 3 complete.** **Phase 4 complete:**
-format conformance (`P4-1`), file-role discovery filter (`P0-14a`), DACPAC CI backstop on
-fixtures (`P4-2`), **atomic multi-file Refactor Preview** (`P4-3` — closes `P3-8` partial gap),
-**conflict handling on concurrent file changes** (`P4-4`), **edit comment text** (`P4-5` —
-ninth edit op), **grouped edit toolbar menu** (`P4-6`), and **column-modifier grammar**
-(`P0-14b` / ADR-0015 — 591 modifier warnings eliminated, real-project diagnostics 597 → 6).
-Next: v0.1 release prep.
+**Current phase:** **Phase 5 — direct-manipulation editing UX** (`P5-1`…`P5-5` done; `P5-6` F5
+smoke recommended before v0.1).
+**Overall state:** Phase 0–4 complete (incl. `P0-14b` / ADR-0015 — real-project diagnostics
+597 → 6). **Phase 5 landed:** selection-first diagram editing — click a table to edit columns
+inline, drag column → PK to add an FK, edits batch into a draft committed via one combined diff
+(`applyDraft` → `foldDraft` → diff/Refactor Preview, reusing P4-4 conflict detection). Retired
+the mode-first Edit… dropdown / EditBanner flow. Next: F5 smoke on the new UX, then v0.1 release
+prep.
 
 ## Done
 
@@ -180,18 +179,16 @@ Next: v0.1 release prep.
   - Ninth edit op [`src/edits/editComment.ts`](../src/edits/editComment.ts): set, change, or
     clear a column's `trailingComment` (blank input clears). Validates editable table, column
     exists, and rejects no-ops. Registered in [`registry.ts`](../src/edits/registry.ts) and
-    derived everywhere via `EditIntentMap` (protocol, dispatch, EditMenu).
-  - Webview **Edit comment** mode: pick a column → text field prefilled with the current
-    comment → preview ([`EditBanner.tsx`](../webview/src/edit/EditBanner.tsx),
-    [`editInteraction.ts`](../src/edits/editInteraction.ts) `selectColumnForEditComment`).
+    derived everywhere via `EditIntentMap` (protocol, dispatch).
+  - Webview **Edit comment** mode (since superseded by P5 inline editing): pick a column → text
+    field prefilled with the current comment → preview
+    ([`editInteraction.ts`](../src/edits/editInteraction.ts) `selectColumnForEditComment`).
   - `npm run verify:p3` extended with set/change/clear/no-op/missing/read-only checks on the
     `dbo.Customer` comment-slots fixture.
-- **Phase 4 — grouped edit toolbar menu** (`P4-6`, 2026-06-28):
-  - [`webview/src/EditMenu.tsx`](../webview/src/EditMenu.tsx) collapses the eight header edit
-    buttons into a single **Edit…** dropdown (trigger shows the active mode label). Operation
-    labels live in a `Record<Exclude<EditMode, "none">, …>` so a new edit mode is a compile
-    error until labelled. Closes on outside-click / Escape. Behavior unchanged — same
-    `startEditMode` wiring; typecheck, compile, and the full verify gate green.
+- **Phase 4 — grouped edit toolbar menu** (`P4-6`, 2026-06-28; **superseded by P5**):
+  - Collapsed the eight header edit buttons into a single **Edit…** dropdown (since retired).
+    Operation labels used a typed `Record<EditMode, …>` map. Intermediate step before the
+    selection-first UX landed in Phase 5.
 - **Health check + refactor** (2026-06-28): all gates green
   (`typecheck`, `compile`, `spike`, `verify:p1/p3/p014/format`). Two behavior-preserving
   slices give the edit-op set a single source of truth:
@@ -214,16 +211,35 @@ Next: v0.1 release prep.
     ADR-0012 post-`GO`); all 96 tables reach a canonical fixed point. Gate `npm run verify:p014`
     extended; fixture [`test/fixtures/edge/dbo.ColumnModifiers.sql`](../test/fixtures/edge/dbo.ColumnModifiers.sql).
     [ADR-0015](decisions/ADR-0015-column-modifier-grammar.md).
+- **Phase 5 — direct-manipulation editing UX** (`P5-1`…`P5-5`, 2026-06-28):
+  - Host: pure [`src/edits/draftBatch.ts`](../src/edits/draftBatch.ts) `foldDraft(model, ops)`
+    threads existing `apply*ToModel` mutators over a clone and builds one combined
+    `FileEditCandidate[]`; new `applyDraft` protocol message + handler in
+    [`erdPanel.ts`](../src/extension/erdPanel.ts) routes to diff editor or Refactor Preview
+    (P4-4 conflict model unchanged). `GraphEdge` carries `fromColumn`/`toColumn` for
+    column-level edge anchoring; `AddColumnParams.beforeColumnName` supports between-row inserts.
+  - Webview: selection-first session + draft logic in [`webview/src/session.ts`](../webview/src/session.ts);
+    inline editing via [`ColumnRow.tsx`](../webview/src/ColumnRow.tsx) /
+    [`TableNode.tsx`](../webview/src/TableNode.tsx); drag-to-link FK via per-column handles;
+    [`DraftToolbar.tsx`](../webview/src/DraftToolbar.tsx) (per-edit undo, Discard, Review & apply).
+    Retired the mode-first `EditMenu` / `EditBanner` webview components.
+  - Headless gate extended: `npm run verify:p3` covers `foldDraft` (multi-edit fold, FK fold,
+    invalid-op rejection, read-only block). Full gate green.
 
 ## In progress
 
-- _None._ Phase 4 fully closed.
+- _None._
 
 ## Next up (immediate — start here next session)
 
-1. **v0.1 release prep** — package/publish checklist, README polish, smoke-test the packaged
+1. **F5 smoke** on the new editing UX (recommended before v0.1): select/highlight a table;
+   inline rename / retype / nullable-toggle / comment-edit; "+ Add column" and between-row "+";
+   remove column (PK/FK guarded); drag-to-link FK (single-PK auto-resolve + drop-on-PK);
+   draft toolbar (per-edit undo, Discard, Review & apply → combined diff); read-only tables show
+   no edit affordances; conflict/recompute path still surfaces.
+2. **v0.1 release prep** — package/publish checklist, README polish, smoke-test the packaged
    extension. (Optional deferred: `P0-14c` post-`GO` warning downgrade for read-only paths;
-   inline PK/UNIQUE awareness in edit guardrails.)
+   inline PK/UNIQUE awareness in edit guardrails; table-level add/drop/rename via a small menu.)
 
 > Tip: `npm run spike`, `npm run verify:p1`, `npm run verify:p3`, `npm run verify:p4`,
 > `npm run verify:p014`, `npm run verify:format`, `npm run format:check`,
@@ -277,8 +293,9 @@ Next: v0.1 release prep.
 - **Multi-file Refactor Preview (`P4-3`)** — **done.** Multi-candidate edits apply atomically
   via VS Code Refactor Preview; rename table uses `renameFile` pairing. Single-file diff
   preview unchanged.
-- **Webview header crowding** — **resolved** (`P4-6`). The eight edit buttons are now a single
-  **Edit…** dropdown ([`webview/src/EditMenu.tsx`](../webview/src/EditMenu.tsx)).
+- **Webview edit UX** — **resolved** (`P5`). Mode-first Edit… dropdown retired; editing is
+  selection-first with inline column affordances and a draft toolbar
+  ([`webview/src/session.ts`](../webview/src/session.ts)). `P4-6` EditMenu was an intermediate step.
 
 ## Real-project coverage gaps from the P0-13 smoke test (triage as P0-14)
 

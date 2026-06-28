@@ -25,6 +25,10 @@ export interface GraphEdge {
   from: string;
   to: string;
   label: string;
+  /** Local column on the `from` table (first column of the FK); enables column-level edge anchoring. */
+  fromColumn?: string;
+  /** Referenced column on the `to` table (first referenced column). */
+  toColumn?: string;
 }
 
 export interface TableLayout {

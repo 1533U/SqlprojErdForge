@@ -1,414 +1,150 @@
 import { ReactFlowProvider } from "@xyflow/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
-import {
-  selectColumnForAddFk,
-  selectColumnForChangeColumn,
-  selectColumnForEditComment,
-  selectColumnForRemove,
-  selectColumnForRename,
-  selectTableForAddColumn,
-  selectTableForDrop,
-  selectTableForRename,
-  validateAddTableForm,
-  validateRenameTableForm,
-  inboundFkWarningForDrop,
-} from "../../src/edits/editInteraction";
 import { ErdCanvas } from "./canvas/ErdCanvas";
-import { EditMenu } from "./EditMenu";
-import type {
-  EditMode,
-  EditSessionState,
-  GraphPayload,
-  HostToWebviewMessage,
-  WebviewToHostMessage,
-} from "./types";
+import type { FlowCallbacks, FlowViewInput } from "./canvas/flowModel";
 import {
-  initialEditSession,
-  resetEditSelection,
-  suggestForeignKeyName,
-} from "./types";
+  appendOp,
+  clearDraft,
+  clearSelection,
+  draftOps,
+  initialSession,
+  projectDraft,
+  pruneAppliedEntries,
+  removeDraftEntry,
+  resolveFkOp,
+  selectColumn,
+  selectTable,
+  withMessage,
+  type SessionState,
+} from "./session";
+import type { AddColumnIntent, DraftOp, GraphPayload, GraphTable, HostToWebviewMessage } from "./types";
+import { vscode } from "./vscodeApi";
 
-declare function acquireVsCodeApi(): {
-  postMessage(message: WebviewToHostMessage): void;
-};
+function findColumn(tables: GraphTable[], tableKey: string, columnName: string) {
+  return tables.find((t) => t.key === tableKey)?.columns.find((c) => c.name === columnName);
+}
 
-const vscode = acquireVsCodeApi();
-
-export function App() {
+export function App(): ReactElement {
   const [payload, setPayload] = useState<GraphPayload | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [showDescriptions, setShowDescriptions] = useState(true);
-  const [edit, setEdit] = useState<EditSessionState>(initialEditSession);
+  const [session, setSession] = useState<SessionState>(initialSession);
 
-  const cancelEditMode = useCallback(() => {
-    setEdit(initialEditSession());
-  }, []);
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
 
-  const startEditMode = useCallback((mode: EditMode) => {
-    setEdit((current) => {
-      if (current.mode === mode) {
-        return initialEditSession();
-      }
-      return { ...resetEditSelection(current), mode };
-    });
-  }, []);
-
-  const onNewColumnChange = useCallback((patch: Partial<EditSessionState["newColumn"]>) => {
-    setEdit((current) => ({
-      ...current,
-      message: undefined,
-      newColumn: { ...current.newColumn, ...patch },
-    }));
-  }, []);
-
-  const onRenameNewNameChange = useCallback((name: string) => {
-    setEdit((current) => ({
-      ...current,
-      message: undefined,
-      renameNewName: name,
-    }));
-  }, []);
-
-  const onChangeColumnDraftChange = useCallback(
-    (patch: Partial<EditSessionState["changeColumnDraft"]>) => {
-      setEdit((current) => ({
-        ...current,
-        message: undefined,
-        changeColumnDraft: { ...current.changeColumnDraft, ...patch },
-      }));
-    },
-    [],
+  const ops = useMemo(() => draftOps(session), [session]);
+  const projection = useMemo(
+    () => (payload ? projectDraft(payload.tables, ops) : { tables: [], provisionalEdges: [] }),
+    [payload, ops],
   );
 
-  const onEditCommentDraftChange = useCallback((comment: string) => {
-    setEdit((current) => ({
-      ...current,
-      message: undefined,
-      editCommentDraft: comment,
-    }));
-  }, []);
-
-  const onAddTableChange = useCallback(
-    (patch: Partial<Pick<EditSessionState, "addTableSchema" | "addTableName">>) => {
-      setEdit((current) => ({
-        ...current,
-        message: undefined,
-        ...patch,
-      }));
-    },
-    [],
-  );
-
-  const onRenameTableChange = useCallback(
-    (patch: Partial<Pick<EditSessionState, "renameTableSchema" | "renameTableNewName">>) => {
-      setEdit((current) => ({
-        ...current,
-        message: undefined,
-        ...patch,
-      }));
-    },
-    [],
-  );
-
-  const onTableSelect = useCallback(
-    (tableKey: string) => {
-      setEdit((current) => {
-        const table = payload?.tables.find((t) => t.key === tableKey);
-
-        if (current.mode === "addColumn") {
-          const result = selectTableForAddColumn(table, tableKey);
-          if (!result.ok) {
-            return { ...current, message: result.message };
-          }
-          return { ...current, message: undefined, addColumnTableKey: result.tableKey };
-        }
-
-        if (current.mode === "dropTable") {
-          const result = selectTableForDrop(table, tableKey);
-          if (!result.ok) {
-            return { ...current, message: result.message };
-          }
-          const dropTableWarning = payload
-            ? inboundFkWarningForDrop(payload.edges, result.tableKey)
-            : undefined;
-          return {
-            ...current,
-            message: undefined,
-            dropTableTarget: result.tableKey,
-            dropTableWarning,
-          };
-        }
-
-        if (current.mode === "renameTable") {
-          const result = selectTableForRename(table, tableKey);
-          if (!result.ok) {
-            return { ...current, message: result.message };
-          }
-          return {
-            ...current,
-            message: undefined,
-            renameTableTarget: result.tableKey,
-            renameTableSchema: result.schema,
-            renameTableNewName: "",
-          };
-        }
-
-        return current;
+  // Append an op built from the current optimistic projection (so stacked edits compose).
+  const appendBuilt = useCallback(
+    (build: (tables: GraphTable[]) => DraftOp | { error: string }) => {
+      setSession((current) => {
+        if (!payload) return current;
+        const projected = projectDraft(payload.tables, draftOps(current)).tables;
+        const result = build(projected);
+        if ("error" in result) return withMessage(current, result.error);
+        return appendOp(current, result);
       });
     },
     [payload],
   );
 
-  const onColumnSelect = useCallback(
+  const onSelectTable = useCallback((tableKey: string) => {
+    setSession((s) => selectTable(s, tableKey));
+  }, []);
+
+  const onSelectColumn = useCallback((tableKey: string, columnName: string) => {
+    setSession((s) => selectColumn(s, tableKey, columnName));
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setSession((s) => clearSelection(s));
+  }, []);
+
+  const onRenameColumn = useCallback(
+    (tableKey: string, oldName: string, newName: string) => {
+      appendBuilt(() => ({ type: "renameColumn", intent: { tableKey, oldName, newName } }));
+    },
+    [appendBuilt],
+  );
+
+  const onChangeType = useCallback(
+    (tableKey: string, columnName: string, dataType: string) => {
+      appendBuilt((tables) => {
+        const column = findColumn(tables, tableKey, columnName);
+        if (!column) return { error: `Column ${columnName} not found.` };
+        return { type: "changeColumn", intent: { tableKey, columnName, dataType, nullable: column.nullable } };
+      });
+    },
+    [appendBuilt],
+  );
+
+  const onToggleNullable = useCallback(
     (tableKey: string, columnName: string) => {
-      setEdit((current) => {
-        const table = payload?.tables.find((t) => t.key === tableKey);
-        const column = table?.columns.find((c) => c.name === columnName);
-        if (!table || !column) return { ...current, message: undefined };
+      appendBuilt((tables) => {
+        const column = findColumn(tables, tableKey, columnName);
+        if (!column) return { error: `Column ${columnName} not found.` };
+        return {
+          type: "changeColumn",
+          intent: { tableKey, columnName, dataType: column.dataType, nullable: !column.nullable },
+        };
+      });
+    },
+    [appendBuilt],
+  );
 
-        if (current.mode === "addFk") {
-          const result = selectColumnForAddFk(table, column, {
-            fkSource: current.fkSource,
-            fkTarget: current.fkTarget,
-          });
-          if (!result.ok) {
-            return { ...current, message: result.message };
-          }
-          return {
-            ...current,
-            message: undefined,
-            fkSource: result.fkSource,
-            fkTarget: result.fkTarget,
-          };
-        }
+  const onEditComment = useCallback(
+    (tableKey: string, columnName: string, comment: string) => {
+      appendBuilt(() => ({ type: "editComment", intent: { tableKey, columnName, comment } }));
+    },
+    [appendBuilt],
+  );
 
-        if (current.mode === "removeColumn") {
-          const result = selectColumnForRemove(table, column);
-          if (!result.ok) {
-            return { ...current, message: result.message };
-          }
-          return {
-            ...current,
-            message: undefined,
-            removeColumnTarget: result.target,
-          };
-        }
+  const onRemoveColumn = useCallback(
+    (tableKey: string, columnName: string) => {
+      appendBuilt(() => ({ type: "removeColumn", intent: { tableKey, columnName } }));
+    },
+    [appendBuilt],
+  );
 
-        if (current.mode === "renameColumn") {
-          const result = selectColumnForRename(table, columnName);
-          if (!result.ok) {
-            return { ...current, message: result.message };
-          }
-          return {
-            ...current,
-            message: undefined,
-            renameColumnTarget: result.target,
-            renameNewName: "",
-          };
-        }
+  const onAddColumn = useCallback(
+    (intent: AddColumnIntent) => {
+      appendBuilt(() => ({ type: "addColumn", intent }));
+    },
+    [appendBuilt],
+  );
 
-        if (current.mode === "changeColumn") {
-          const result = selectColumnForChangeColumn(table, column);
-          if (!result.ok) {
-            return { ...current, message: result.message };
-          }
-          return {
-            ...current,
-            message: undefined,
-            changeColumnTarget: result.target,
-            changeColumnOriginal: {
-              dataType: result.dataType,
-              nullable: result.nullable,
-            },
-            changeColumnDraft: {
-              dataType: result.dataType,
-              nullable: result.nullable,
-            },
-          };
-        }
-
-        if (current.mode === "editComment") {
-          const result = selectColumnForEditComment(table, column, column.description);
-          if (!result.ok) {
-            return { ...current, message: result.message };
-          }
-          return {
-            ...current,
-            message: undefined,
-            editCommentTarget: result.target,
-            editCommentOriginal: result.comment,
-            editCommentDraft: result.comment,
-          };
-        }
-
-        return { ...current, message: undefined };
+  const onConnectColumns = useCallback(
+    (fromTableKey: string, fromColumn: string, toTableKey: string, toColumn: string | undefined) => {
+      setSession((current) => {
+        if (!payload) return current;
+        const projected = projectDraft(payload.tables, draftOps(current)).tables;
+        const result = resolveFkOp(projected, fromTableKey, fromColumn, toTableKey, toColumn);
+        if (!result.ok) return withMessage(current, result.message);
+        return appendOp(current, result.op);
       });
     },
     [payload],
   );
 
-  const onConfirmFk = useCallback(() => {
-    setEdit((current) => {
-      if (!current.fkSource || !current.fkTarget) return current;
-      vscode.postMessage({
-        type: "addForeignKey",
-        intent: {
-          fromTableKey: current.fkSource.tableKey,
-          fromColumn: current.fkSource.columnName,
-          toTableKey: current.fkTarget.tableKey,
-          toColumn: current.fkTarget.columnName,
-          constraintName: suggestForeignKeyName(current.fkSource.tableKey, current.fkTarget.tableKey),
-        },
-      });
-      return { ...current, message: undefined };
-    });
+  const onReview = useCallback(() => {
+    const current = sessionRef.current;
+    if (current.draft.length === 0) return;
+    vscode.postMessage({ type: "applyDraft", ops: draftOps(current) });
   }, []);
 
-  const onConfirmAddColumn = useCallback(() => {
-    setEdit((current) => {
-      if (!current.addColumnTableKey) return current;
-      vscode.postMessage({
-        type: "addColumn",
-        intent: {
-          tableKey: current.addColumnTableKey,
-          columnName: current.newColumn.name.trim(),
-          dataType: current.newColumn.dataType.trim(),
-          nullable: current.newColumn.nullable,
-          ...(current.newColumn.description.trim()
-            ? { trailingComment: current.newColumn.description.trim() }
-            : {}),
-        },
-      });
-      return { ...current, message: undefined };
-    });
+  const onDiscard = useCallback(() => {
+    setSession((s) => clearDraft(s));
   }, []);
 
-  const onConfirmRemoveColumn = useCallback(() => {
-    setEdit((current) => {
-      if (!current.removeColumnTarget) return current;
-      vscode.postMessage({
-        type: "removeColumn",
-        intent: {
-          tableKey: current.removeColumnTarget.tableKey,
-          columnName: current.removeColumnTarget.columnName,
-        },
-      });
-      return { ...current, message: undefined };
-    });
+  const onRemoveEntry = useCallback((id: number) => {
+    setSession((s) => removeDraftEntry(s, id));
   }, []);
-
-  const onConfirmRenameColumn = useCallback(() => {
-    setEdit((current) => {
-      if (!current.renameColumnTarget) return current;
-      const newName = current.renameNewName.trim();
-      if (!newName) return current;
-      vscode.postMessage({
-        type: "renameColumn",
-        intent: {
-          tableKey: current.renameColumnTarget.tableKey,
-          oldName: current.renameColumnTarget.columnName,
-          newName,
-        },
-      });
-      return { ...current, message: undefined };
-    });
-  }, []);
-
-  const onConfirmChangeColumn = useCallback(() => {
-    setEdit((current) => {
-      if (!current.changeColumnTarget) return current;
-      const dataType = current.changeColumnDraft.dataType.trim();
-      if (!dataType) return current;
-      vscode.postMessage({
-        type: "changeColumn",
-        intent: {
-          tableKey: current.changeColumnTarget.tableKey,
-          columnName: current.changeColumnTarget.columnName,
-          dataType,
-          nullable: current.changeColumnDraft.nullable,
-        },
-      });
-      return { ...current, message: undefined };
-    });
-  }, []);
-
-  const onConfirmEditComment = useCallback(() => {
-    setEdit((current) => {
-      if (!current.editCommentTarget) return current;
-      if (current.editCommentOriginal == null) return current;
-      if (current.editCommentDraft.trim() === current.editCommentOriginal.trim()) {
-        return current;
-      }
-      vscode.postMessage({
-        type: "editComment",
-        intent: {
-          tableKey: current.editCommentTarget.tableKey,
-          columnName: current.editCommentTarget.columnName,
-          comment: current.editCommentDraft.trim(),
-        },
-      });
-      return { ...current, message: undefined };
-    });
-  }, []);
-
-  const onConfirmAddTable = useCallback(() => {
-    setEdit((current) => {
-      const tables = payload?.tables ?? [];
-      const result = validateAddTableForm(
-        tables,
-        current.addTableSchema,
-        current.addTableName,
-      );
-      if (!result.ok) {
-        return { ...current, message: result.message };
-      }
-      vscode.postMessage({
-        type: "addTable",
-        intent: {
-          schema: current.addTableSchema.trim(),
-          tableName: current.addTableName.trim(),
-        },
-      });
-      return { ...current, message: undefined };
-    });
-  }, [payload]);
-
-  const onConfirmDropTable = useCallback(() => {
-    setEdit((current) => {
-      if (!current.dropTableTarget) return current;
-      vscode.postMessage({
-        type: "dropTable",
-        intent: { tableKey: current.dropTableTarget },
-      });
-      return { ...current, message: undefined };
-    });
-  }, []);
-
-  const onConfirmRenameTable = useCallback(() => {
-    setEdit((current) => {
-      if (!current.renameTableTarget) return current;
-      const tables = payload?.tables ?? [];
-      const result = validateRenameTableForm(
-        tables,
-        current.renameTableTarget,
-        current.renameTableSchema,
-        current.renameTableNewName,
-      );
-      if (!result.ok) {
-        return { ...current, message: result.message };
-      }
-      vscode.postMessage({
-        type: "renameTable",
-        intent: {
-          tableKey: current.renameTableTarget,
-          newTableName: current.renameTableNewName.trim(),
-          newSchema: current.renameTableSchema.trim(),
-        },
-      });
-      return { ...current, message: undefined };
-    });
-  }, [payload]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<HostToWebviewMessage>): void => {
@@ -417,15 +153,21 @@ export function App() {
         case "graph":
           setError(undefined);
           setPayload(message.payload);
+          setSession((s) => {
+            const remaining = pruneAppliedEntries(message.payload.tables, s.draft);
+            return remaining.length === s.draft.length ? s : { ...s, draft: remaining };
+          });
           break;
         case "error":
           setError(message.message);
           break;
         case "editResult":
           if (message.ok) {
-            cancelEditMode();
+            setSession((s) =>
+              withMessage(s, "Combined diff opened — apply it in the editor to write changes."),
+            );
           } else {
-            setEdit((current) => ({ ...current, message: message.message }));
+            setSession((s) => withMessage(s, message.message));
           }
           break;
         default: {
@@ -438,7 +180,44 @@ export function App() {
     window.addEventListener("message", onMessage);
     vscode.postMessage({ type: "ready" });
     return () => window.removeEventListener("message", onMessage);
-  }, [cancelEditMode]);
+  }, []);
+
+  const callbacks: FlowCallbacks = useMemo(
+    () => ({
+      onSelectTable,
+      onSelectColumn,
+      onRenameColumn,
+      onChangeType,
+      onToggleNullable,
+      onEditComment,
+      onRemoveColumn,
+      onAddColumn,
+    }),
+    [
+      onSelectTable,
+      onSelectColumn,
+      onRenameColumn,
+      onChangeType,
+      onToggleNullable,
+      onEditComment,
+      onRemoveColumn,
+      onAddColumn,
+    ],
+  );
+
+  const view: FlowViewInput | undefined = useMemo(() => {
+    if (!payload) return undefined;
+    return {
+      tables: projection.tables,
+      edges: payload.edges,
+      provisionalEdges: projection.provisionalEdges,
+      layout: payload.layout,
+      showDescriptions,
+      selectedTableKey: session.selectedTableKey,
+      selectedColumn: session.selectedColumn,
+      callbacks,
+    };
+  }, [payload, projection, showDescriptions, session.selectedTableKey, session.selectedColumn, callbacks]);
 
   if (error) {
     return (
@@ -449,7 +228,7 @@ export function App() {
     );
   }
 
-  if (!payload) {
+  if (!payload || !view) {
     return (
       <div className="erdforge-shell erdforge-loading">
         <p>Loading ERD…</p>
@@ -464,6 +243,9 @@ export function App() {
         <span>
           {payload.tables.length} tables · {payload.edges.length} FK edges
         </span>
+        <span className="erdforge-hint">
+          Click a table to edit its columns · drag from a column to a primary key to add a foreign key
+        </span>
         <label className="erdforge-toggle">
           <input
             type="checkbox"
@@ -472,32 +254,18 @@ export function App() {
           />
           Show column descriptions
         </label>
-        <EditMenu activeMode={edit.mode} onSelect={startEditMode} />
       </header>
       <div className="erdforge-canvas">
         <ReactFlowProvider>
           <ErdCanvas
-            payload={payload}
-            showDescriptions={showDescriptions}
-            edit={edit}
-            onNewColumnChange={onNewColumnChange}
-            onColumnSelect={onColumnSelect}
-            onTableSelect={onTableSelect}
-            onConfirmFk={onConfirmFk}
-            onConfirmAddColumn={onConfirmAddColumn}
-            onConfirmRemoveColumn={onConfirmRemoveColumn}
-            onConfirmRenameColumn={onConfirmRenameColumn}
-            onConfirmChangeColumn={onConfirmChangeColumn}
-            onConfirmEditComment={onConfirmEditComment}
-            onConfirmAddTable={onConfirmAddTable}
-            onConfirmDropTable={onConfirmDropTable}
-            onConfirmRenameTable={onConfirmRenameTable}
-            onRenameNewNameChange={onRenameNewNameChange}
-            onChangeColumnDraftChange={onChangeColumnDraftChange}
-            onEditCommentDraftChange={onEditCommentDraftChange}
-            onAddTableChange={onAddTableChange}
-            onRenameTableChange={onRenameTableChange}
-            onCancelEdit={cancelEditMode}
+            view={view}
+            draft={session.draft}
+            message={session.message}
+            onConnectColumns={onConnectColumns}
+            onPaneClick={onPaneClick}
+            onReview={onReview}
+            onDiscard={onDiscard}
+            onRemoveEntry={onRemoveEntry}
           />
         </ReactFlowProvider>
       </div>

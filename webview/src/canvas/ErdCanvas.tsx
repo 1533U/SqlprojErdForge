@@ -6,96 +6,70 @@ import {
   applyEdgeChanges,
   applyNodeChanges,
   useReactFlow,
+  type Connection,
   type Edge,
   type EdgeChange,
   type Node,
   type NodeChange,
 } from "@xyflow/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 
-import { EditBanner } from "../edit/EditBanner";
+import { DraftToolbar } from "../DraftToolbar";
 import { TableNode, type TableNodeData } from "../TableNode";
-import type { EditSessionState, GraphPayload } from "../types";
-import { defaultEdgeOptions, payloadToFlow } from "./flowModel";
-
-declare function acquireVsCodeApi(): {
-  postMessage(message: unknown): void;
-};
-
-const vscode = acquireVsCodeApi();
+import type { DraftEntry } from "../session";
+import { defaultEdgeOptions, payloadToFlow, type FlowViewInput } from "./flowModel";
+import { vscode } from "../vscodeApi";
 
 const nodeTypes = { table: TableNode };
 
+function parseHandle(handle: string | null | undefined, prefix: string): string | undefined {
+  if (!handle) return undefined;
+  return handle.startsWith(`${prefix}::`) ? handle.slice(prefix.length + 2) : undefined;
+}
+
 function FitViewOnLoad({ tableCount, edgeCount }: { tableCount: number; edgeCount: number }) {
   const { fitView } = useReactFlow();
-
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fitView({ padding: 0.2, duration: 200 });
-    }, 50);
+    const timer = setTimeout(() => void fitView({ padding: 0.2, duration: 200 }), 50);
     return () => clearTimeout(timer);
   }, [fitView, tableCount, edgeCount]);
-
   return null;
 }
 
-export function ErdCanvas({
-  payload,
-  showDescriptions,
-  edit,
-  onNewColumnChange,
-  onColumnSelect,
-  onTableSelect,
-  onConfirmFk,
-  onConfirmAddColumn,
-  onConfirmRemoveColumn,
-  onConfirmRenameColumn,
-  onConfirmChangeColumn,
-  onConfirmEditComment,
-  onConfirmAddTable,
-  onConfirmDropTable,
-  onConfirmRenameTable,
-  onRenameNewNameChange,
-  onChangeColumnDraftChange,
-  onEditCommentDraftChange,
-  onAddTableChange,
-  onRenameTableChange,
-  onCancelEdit,
-}: {
-  payload: GraphPayload;
-  showDescriptions: boolean;
-  edit: EditSessionState;
-  onNewColumnChange: (patch: Partial<EditSessionState["newColumn"]>) => void;
-  onColumnSelect: (tableKey: string, columnName: string) => void;
-  onTableSelect: (tableKey: string) => void;
-  onConfirmFk: () => void;
-  onConfirmAddColumn: () => void;
-  onConfirmRemoveColumn: () => void;
-  onConfirmRenameColumn: () => void;
-  onConfirmChangeColumn: () => void;
-  onConfirmEditComment: () => void;
-  onConfirmAddTable: () => void;
-  onConfirmDropTable: () => void;
-  onConfirmRenameTable: () => void;
-  onRenameNewNameChange: (name: string) => void;
-  onChangeColumnDraftChange: (patch: Partial<EditSessionState["changeColumnDraft"]>) => void;
-  onEditCommentDraftChange: (comment: string) => void;
-  onAddTableChange: (patch: Partial<Pick<EditSessionState, "addTableSchema" | "addTableName">>) => void;
-  onRenameTableChange: (patch: Partial<Pick<EditSessionState, "renameTableSchema" | "renameTableNewName">>) => void;
-  onCancelEdit: () => void;
-}) {
-  const initial = useMemo(
-    () => payloadToFlow(payload, showDescriptions, edit, onColumnSelect, onTableSelect),
-    [payload, showDescriptions, edit, onColumnSelect, onTableSelect],
-  );
+export interface ErdCanvasProps {
+  view: FlowViewInput;
+  draft: DraftEntry[];
+  message: string | undefined;
+  onConnectColumns: (
+    fromTableKey: string,
+    fromColumn: string,
+    toTableKey: string,
+    toColumn: string | undefined,
+  ) => void;
+  onPaneClick: () => void;
+  onReview: () => void;
+  onDiscard: () => void;
+  onRemoveEntry: (id: number) => void;
+}
+
+export function ErdCanvas(props: ErdCanvasProps): ReactElement {
+  const { view } = props;
+  const initial = useMemo(() => payloadToFlow(view), [view]);
   const [nodes, setNodes] = useState(initial.nodes);
   const [edges, setEdges] = useState(initial.edges);
 
   useEffect(() => {
-    const next = payloadToFlow(payload, showDescriptions, edit, onColumnSelect, onTableSelect);
-    setNodes(next.nodes);
+    const next = payloadToFlow(view);
+    // Preserve any in-session (un-persisted) drag positions across rebuilds.
+    setNodes((current) => {
+      const posById = new Map(current.map((n) => [n.id, n.position]));
+      return next.nodes.map((n) => {
+        const pos = posById.get(n.id);
+        return pos ? { ...n, position: pos } : n;
+      });
+    });
     setEdges(next.edges);
-  }, [payload, showDescriptions, edit, onColumnSelect, onTableSelect]);
+  }, [view]);
 
   const onNodesChange = useCallback((changes: NodeChange<Node<TableNodeData>>[]) => {
     setNodes((current) => applyNodeChanges(changes, current));
@@ -115,26 +89,25 @@ export function ErdCanvas({
     setEdges((current) => applyEdgeChanges(changes, current));
   }, []);
 
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      if (!connection.source || !connection.target) return;
+      const fromColumn = parseHandle(connection.sourceHandle, "src");
+      const toColumn = parseHandle(connection.targetHandle, "tgt");
+      if (!fromColumn) return;
+      props.onConnectColumns(connection.source, fromColumn, connection.target, toColumn);
+    },
+    [props],
+  );
+
   return (
     <>
-      <EditBanner
-        edit={edit}
-        onNewColumnChange={onNewColumnChange}
-        onConfirmFk={onConfirmFk}
-        onConfirmAddColumn={onConfirmAddColumn}
-        onConfirmRemoveColumn={onConfirmRemoveColumn}
-        onConfirmRenameColumn={onConfirmRenameColumn}
-        onConfirmChangeColumn={onConfirmChangeColumn}
-        onConfirmEditComment={onConfirmEditComment}
-        onConfirmAddTable={onConfirmAddTable}
-        onConfirmDropTable={onConfirmDropTable}
-        onConfirmRenameTable={onConfirmRenameTable}
-        onRenameNewNameChange={onRenameNewNameChange}
-        onChangeColumnDraftChange={onChangeColumnDraftChange}
-        onEditCommentDraftChange={onEditCommentDraftChange}
-        onAddTableChange={onAddTableChange}
-        onRenameTableChange={onRenameTableChange}
-        onCancel={onCancelEdit}
+      <DraftToolbar
+        draft={props.draft}
+        message={props.message}
+        onReview={props.onReview}
+        onDiscard={props.onDiscard}
+        onRemoveEntry={props.onRemoveEntry}
       />
       <ReactFlow
         nodes={nodes}
@@ -142,6 +115,8 @@ export function ErdCanvas({
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onPaneClick={props.onPaneClick}
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
         fitViewOptions={{ padding: 0.2 }}
@@ -149,7 +124,10 @@ export function ErdCanvas({
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
       >
-        <FitViewOnLoad tableCount={payload.tables.length} edgeCount={payload.edges.length} />
+        <FitViewOnLoad
+          tableCount={view.tables.length}
+          edgeCount={view.edges.length + view.provisionalEdges.length}
+        />
         <Background gap={16} />
         <Controls />
         <MiniMap pannable zoomable />

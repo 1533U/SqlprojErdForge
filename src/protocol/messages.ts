@@ -12,6 +12,7 @@ import type {
   AddForeignKeyParams,
   AddTableParams,
   ChangeColumnParams,
+  DraftOp,
   DropTableParams,
   EditCommentParams,
   EditIntentMap,
@@ -20,6 +21,8 @@ import type {
   RenameColumnParams,
   RenameTableParams,
 } from "../edits/types.ts";
+
+export type { DraftOp };
 
 export type AddForeignKeyIntent = AddForeignKeyParams;
 export type AddColumnIntent = AddColumnParams;
@@ -42,9 +45,13 @@ export type HostToWebviewMessage =
   | { type: "editResult"; ok: true }
   | { type: "editResult"; ok: false; message: string };
 
+/** Apply an ordered draft of inline edits as one combined preview (direct-manipulation UX). */
+export type ApplyDraftMessage = { type: "applyDraft"; ops: DraftOp[] };
+
 export type WebviewToHostMessage =
   | { type: "ready" }
   | { type: "layoutUpdate"; tableKey: string; x: number; y: number }
+  | ApplyDraftMessage
   | EditMessage;
 
 /**
@@ -67,6 +74,6 @@ export function isWebviewToHostMessage(value: unknown): value is WebviewToHostMe
   if (!value || typeof value !== "object") return false;
   const type = (value as { type?: string }).type;
   if (type === undefined) return false;
-  if (type === "ready" || type === "layoutUpdate") return true;
+  if (type === "ready" || type === "layoutUpdate" || type === "applyDraft") return true;
   return Object.prototype.hasOwnProperty.call(EDIT_OP_IDS, type);
 }

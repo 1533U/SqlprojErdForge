@@ -7,6 +7,31 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 
 ## [Unreleased]
 
+### Changed
+- **Direct-manipulation ERD editing UX (selection-first + batched draft):** retired the
+  mode-first "Edit… dropdown → click → form → preview" flow. You now click a table to select
+  and highlight it, then edit its columns inline — rename, retype, toggle nullable, edit the
+  comment, remove (PK/FK-guarded), and add rows (with a "+" insertion point between rows and a
+  "+ Add column" footer). Foreign keys are created by dragging from a column's source handle to
+  a target table's primary-key column (dropping on a table with a single PK auto-resolves it).
+  Inline edits accumulate into an ordered **draft** projected over the diagram for instant
+  optimistic feedback; a compact toolbar lists pending edits with per-edit undo, **Discard**,
+  and **Review & apply**, which commits the whole draft through one combined diff preview.
+  - Host: new pure [`src/edits/draftBatch.ts`](src/edits/draftBatch.ts) `foldDraft(model, ops)`
+    threads the existing `apply*ToModel` mutators over a clone, diffs touched tables by canonical
+    emit, and builds one `FileEditCandidate[]` — reusing the diff-preview / Refactor Preview /
+    P4-4 conflict-detection pipeline unchanged. New `applyDraft` protocol message + handler in
+    [`src/extension/erdPanel.ts`](src/extension/erdPanel.ts). No parser/emitter/model/safety
+    changes.
+  - `GraphEdge` now carries `fromColumn`/`toColumn` so FK edges anchor to per-column handles;
+    `AddColumnParams` gains optional `beforeColumnName` for positional inserts (default still
+    "before constraints", honoring C5).
+  - Webview: selection-first session + pure draft logic in
+    [`webview/src/session.ts`](webview/src/session.ts); new `ColumnRow`, `TableNode`,
+    `DraftToolbar` components; retired `EditMenu.tsx` and `edit/EditBanner.tsx`.
+  - Green gate extended: `npm run verify:p3` covers `foldDraft` (multi-edit fold, FK fold,
+    invalid-op rejection naming the failing position, read-only block, empty/no-op rejection).
+
 ### Added
 - **P0-14b — column-modifier grammar (ADR-0015):** the parser/emitter now model five column
   constructs that previously produced 591 "unsupported column modifier" warnings on the real

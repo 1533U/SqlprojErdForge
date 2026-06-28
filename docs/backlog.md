@@ -74,3 +74,14 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 | P4-4 | Conflict handling on concurrent file changes | done | shared `src/edits/conflict.ts` detector; fail-closed + Recompute preview; `npm run verify:p4`; ADR-0014 |
 | P4-5 | Edit comment text on the diagram | done | ninth edit op `editComment`; set/change/clear a column's trailing comment; `npm run verify:p3` extended |
 | P4-6 | Group webview edit toolbar (Edit… menu) | done | `webview/src/EditMenu.tsx` collapses eight buttons into one dropdown; typed `Record<EditMode,…>` label map |
+
+## Phase 5 — Direct-manipulation editing UX
+
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| P5-1 | Host `foldDraft` + `applyDraft` (batched draft → one combined diff) | done | pure `src/edits/draftBatch.ts` threads `apply*ToModel` + `buildFileEditCandidates`; `applyDraft` msg + `erdPanel.ts` handler reuse diffPreview/Refactor Preview + P4-4 conflict model; `verify:p3` extended |
+| P5-2 | Selection-first webview (click table → highlight + edit) | done | `webview/src/session.ts` (selection + draft + optimistic `projectDraft`); retired `EditMenu`/`EditBanner`; new `TableNode`/`ColumnRow` |
+| P5-3 | Drag-to-link FK via per-column handles | done | `GraphEdge.fromColumn/toColumn` anchoring; `onConnect` → `resolveFkOp` (single-PK auto-resolve, drop-on-PK, non-PK rejection); provisional dashed edge |
+| P5-4 | Inline column editing (rename/type/nullable/comment) + add/remove row | done | per-field inline inputs in `ColumnRow`; PK/FK-guarded remove; `+ Add column` + between-row `+` via `AddColumnParams.beforeColumnName` |
+| P5-5 | Draft toolbar (per-edit undo / Discard / Review & apply) | done | `webview/src/DraftToolbar.tsx`; self-healing via `pruneAppliedEntries` on graph refresh |
+| P5-6 | F5 manual UX pass | done | headless gate green; F5 smoke checklist in STATUS "Next up" (recommended before v0.1) |

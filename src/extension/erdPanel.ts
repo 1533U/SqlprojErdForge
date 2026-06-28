@@ -14,7 +14,8 @@ import { suggestForeignKeyName } from "../edits/addForeignKey.ts";
 import { ErdDiagnostics } from "./diagnostics.ts";
 import { isEditMessage, prepareEditFromMessage, type EditMessage } from "./editDispatch.ts";
 import { type DiffPreviewController } from "./diffPreview.ts";
-import { isWebviewToHostMessage, type HostToWebviewMessage } from "./messages.ts";
+import { isWebviewToHostMessage, type ApplyDraftMessage, type HostToWebviewMessage } from "./messages.ts";
+import { foldDraft } from "../edits/draftBatch.ts";
 import { watchSqlFiles } from "./watcher.ts";
 
 export class ErdPanel {
@@ -161,12 +162,40 @@ export class ErdPanel {
         );
         writeLayout(this.projectPath, this.layout);
         break;
+      case "applyDraft":
+        void this.handleApplyDraft(message);
+        break;
       default:
         if (isEditMessage(message)) {
           void this.handleEditMessage(message);
         }
         break;
     }
+  }
+
+  private async handleApplyDraft(message: ApplyDraftMessage): Promise<void> {
+    if (!this.model) {
+      this.postMessage({ type: "editResult", ok: false, message: "Model not loaded yet." });
+      return;
+    }
+
+    const result = foldDraft(this.model, message.ops);
+    if (!result.ok) {
+      this.postMessage({ type: "editResult", ok: false, message: result.message });
+      void vscode.window.showWarningMessage(`ErdForge: ${result.message}`);
+      return;
+    }
+
+    const title =
+      message.ops.length === 1
+        ? "Apply 1 change"
+        : `Apply ${message.ops.length} changes`;
+    const recompute = async (): Promise<void> => {
+      await this.refresh();
+      await this.handleApplyDraft(message);
+    };
+    await this.diffPreview.show(result.candidates, title, recompute);
+    this.postMessage({ type: "editResult", ok: true });
   }
 
   private async handleEditMessage(message: EditMessage): Promise<void> {

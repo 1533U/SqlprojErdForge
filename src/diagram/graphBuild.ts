@@ -66,6 +66,8 @@ function edgesToGraph(edges: Edge[]): GraphEdge[] {
     from: edge.from,
     to: edge.to,
     label: edge.constraintName,
+    ...(edge.columns[0] ? { fromColumn: edge.columns[0] } : {}),
+    ...(edge.referencedColumns[0] ? { toColumn: edge.referencedColumns[0] } : {}),
   }));
 }
 

@@ -5,6 +5,7 @@
 export type {
   AddColumnIntent,
   AddForeignKeyIntent,
+  ApplyDraftMessage,
   HostToWebviewMessage,
   RemoveColumnIntent,
   RenameColumnIntent,

@@ -7,4 +7,9 @@ if (!root) {
   throw new Error("Missing #root element");
 }
 
-createRoot(root).render(<App />);
+try {
+  createRoot(root).render(<App />);
+} catch (err) {
+  const message = err instanceof Error ? err.message : String(err);
+  root.textContent = `ErdForge webview failed to start: ${message}`;
+}

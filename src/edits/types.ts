@@ -18,6 +18,12 @@ export interface AddColumnParams {
   dataType: string;
   nullable: boolean;
   trailingComment?: string;
+  /**
+   * Insert the new column immediately before this existing column. When omitted
+   * (or not found), the column is placed after all columns but before constraints
+   * (C5 — columns precede constraints).
+   */
+  beforeColumnName?: string;
 }
 
 export interface RemoveColumnParams {
@@ -109,3 +115,21 @@ export interface EditIntentMap {
 }
 
 export type EditOperationId = keyof EditIntentMap;
+
+/**
+ * Edit operations that can be collected into an inline draft and applied as a
+ * single batch (one combined diff). Table-level ops (add/drop/rename table) stay
+ * on the single-intent path because they create/delete files.
+ */
+export type DraftableOperationId =
+  | "addColumn"
+  | "removeColumn"
+  | "renameColumn"
+  | "changeColumn"
+  | "editComment"
+  | "addForeignKey";
+
+/** `{ type: "addColumn"; intent: AddColumnParams } | …` for each draftable op. */
+export type DraftOp = {
+  [K in DraftableOperationId]: { type: K; intent: EditIntentMap[K] };
+}[DraftableOperationId];

@@ -15,6 +15,7 @@ import { runDropTableChecks } from "./p3/dropTable.ts";
 import { runRenameColumnChecks } from "./p3/renameColumn.ts";
 import { runRenameTableChecks } from "./p3/renameTable.ts";
 import { runBatchApplyChecks } from "./p3/batchApply.ts";
+import { runDraftBatchChecks } from "./p3/draftBatch.ts";
 
 export function runVerifyP3(): void {
   const h = new VerifyHarness();
@@ -51,6 +52,9 @@ export function runVerifyP3(): void {
 
   console.log("\nBatch apply (P4-3):");
   runBatchApplyChecks(h, model);
+
+  console.log("\nDraft batch (direct-manipulation UX):");
+  runDraftBatchChecks(h, model);
 
   h.exitWithSummary("ALL P3 CHECKS PASSED", "{n} P3 CHECK(S) FAILED");
 }

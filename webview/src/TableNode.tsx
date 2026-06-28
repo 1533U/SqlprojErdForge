@@ -1,7 +1,8 @@
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { type NodeProps } from "@xyflow/react";
+import { useState, type ReactElement } from "react";
 
-import { computeColumnRowEditState } from "./columnEditState";
-import type { ColumnRef, EditMode, GraphColumn } from "./types";
+import { ColumnRow } from "./ColumnRow";
+import type { AddColumnIntent, GraphColumn } from "./types";
 
 export interface TableNodeData extends Record<string, unknown> {
   tableKey: string;
@@ -10,144 +11,159 @@ export interface TableNodeData extends Record<string, unknown> {
   readOnly: boolean;
   columns: GraphColumn[];
   showDescriptions: boolean;
-  editMode: EditMode;
-  fkSource: ColumnRef | undefined;
-  addColumnTableKey: string | undefined;
-  removeColumnTarget: ColumnRef | undefined;
-  renameColumnTarget: ColumnRef | undefined;
-  changeColumnTarget: ColumnRef | undefined;
-  editCommentTarget: ColumnRef | undefined;
-  dropTableTarget: string | undefined;
-  renameTableTarget: string | undefined;
-  onColumnSelect: (tableKey: string, columnName: string) => void;
-  onTableSelect: (tableKey: string) => void;
+  selected: boolean;
+  selectedColumnName: string | undefined;
+  onSelectTable: (tableKey: string) => void;
+  onSelectColumn: (tableKey: string, columnName: string) => void;
+  onRenameColumn: (tableKey: string, oldName: string, newName: string) => void;
+  onChangeType: (tableKey: string, columnName: string, dataType: string) => void;
+  onToggleNullable: (tableKey: string, columnName: string) => void;
+  onEditComment: (tableKey: string, columnName: string, comment: string) => void;
+  onRemoveColumn: (tableKey: string, columnName: string) => void;
+  onAddColumn: (intent: AddColumnIntent) => void;
 }
 
-function rowClassNames(state: ReturnType<typeof computeColumnRowEditState>, editMode: EditMode): string {
-  return [
-    "table-node__row",
-    state.isSelectable ? "table-node__row--selectable" : "",
-    state.isRemoveBlocked && editMode === "removeColumn" ? "table-node__row--blocked" : "",
-    state.isFkSource ? "table-node__row--fk-source" : "",
-    state.isFkTarget ? "table-node__row--fk-target" : "",
-    state.isRemoveTarget ? "table-node__row--remove-target" : "",
-    state.isRenameTarget ? "table-node__row--rename-target" : "",
-    state.isChangeColumnTarget ? "table-node__row--change-target" : "",
-    state.isEditCommentTarget ? "table-node__row--comment-target" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+function removeBlockedReason(column: GraphColumn): string | undefined {
+  if (column.isPrimaryKey) return "Primary-key columns can't be removed here.";
+  if (column.isForeignKey) return "Foreign-key columns can't be removed here.";
+  return undefined;
 }
 
-export function TableNode({ data }: NodeProps) {
-  const nodeData = data as TableNodeData;
-  const isAddColumnTarget =
-    nodeData.editMode === "addColumn" &&
-    nodeData.addColumnTableKey === nodeData.tableKey;
-  const isDropTableTarget =
-    nodeData.editMode === "dropTable" &&
-    nodeData.dropTableTarget === nodeData.tableKey;
-  const isRenameTableTarget =
-    nodeData.editMode === "renameTable" &&
-    nodeData.renameTableTarget === nodeData.tableKey;
-  const headerSelectable =
-    (nodeData.editMode === "addColumn" ||
-      nodeData.editMode === "dropTable" ||
-      nodeData.editMode === "renameTable") &&
-    !nodeData.readOnly;
+interface NewColumnForm {
+  beforeColumnName: string | undefined;
+  name: string;
+  dataType: string;
+  nullable: boolean;
+}
+
+export function TableNode({ data }: NodeProps): ReactElement {
+  const d = data as TableNodeData;
+  const editable = d.selected && !d.readOnly;
+  const [adding, setAdding] = useState<NewColumnForm | null>(null);
+
+  const beginAdd = (beforeColumnName: string | undefined): void => {
+    setAdding({ beforeColumnName, name: "", dataType: "INT", nullable: true });
+  };
+
+  const commitAdd = (): void => {
+    if (!adding) return;
+    const name = adding.name.trim();
+    const dataType = adding.dataType.trim();
+    if (!name || !dataType) {
+      setAdding(null);
+      return;
+    }
+    d.onAddColumn({
+      tableKey: d.tableKey,
+      columnName: name,
+      dataType,
+      nullable: adding.nullable,
+      ...(adding.beforeColumnName ? { beforeColumnName: adding.beforeColumnName } : {}),
+    });
+    setAdding(null);
+  };
 
   return (
-    <div className={`table-node${nodeData.readOnly ? " table-node--readonly" : ""}`}>
-      <Handle className="table-node__handle table-node__handle--target" type="target" position={Position.Left} />
-      <Handle className="table-node__handle table-node__handle--source" type="source" position={Position.Right} />
+    <div
+      className={[
+        "table-node",
+        d.readOnly ? "table-node--readonly" : "",
+        d.selected ? "table-node--selected" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <div
-        className={[
-          "table-node__header",
-          headerSelectable ? "table-node__header--selectable" : "",
-          isAddColumnTarget || isDropTableTarget || isRenameTableTarget ? "table-node__header--selected" : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        onClick={
-          headerSelectable
-            ? () => nodeData.onTableSelect(nodeData.tableKey)
-            : undefined
-        }
-        onKeyDown={
-          headerSelectable
-            ? (event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  nodeData.onTableSelect(nodeData.tableKey);
-                }
-              }
-            : undefined
-        }
-        role={headerSelectable ? "button" : undefined}
-        tabIndex={headerSelectable ? 0 : undefined}
+        className="table-node__header table-node__header--selectable"
+        role="button"
+        tabIndex={0}
+        onClick={() => d.onSelectTable(d.tableKey)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            d.onSelectTable(d.tableKey);
+          }
+        }}
       >
-        <span className="table-node__schema">{nodeData.schema}</span>
-        <span className="table-node__name">{nodeData.name}</span>
-        {nodeData.readOnly ? <span className="table-node__badge">read-only</span> : null}
+        <span className="table-node__schema">{d.schema}</span>
+        <span className="table-node__name">{d.name}</span>
+        {d.readOnly ? <span className="table-node__badge">read-only</span> : null}
       </div>
-      <div className="table-node__body">
-        {nodeData.columns.map((column) => {
-          const state = computeColumnRowEditState(
-            nodeData.editMode,
-            nodeData.readOnly,
-            nodeData.fkSource,
-            nodeData.removeColumnTarget,
-            nodeData.renameColumnTarget,
-            nodeData.changeColumnTarget,
-            nodeData.editCommentTarget,
-            nodeData.tableKey,
-            column,
-          );
 
-          return (
-            <div className="table-node__column" key={column.name}>
-              <div
-                className={rowClassNames(state, nodeData.editMode)}
-                onClick={
-                  state.isSelectable
-                    ? () => nodeData.onColumnSelect(nodeData.tableKey, column.name)
-                    : undefined
-                }
-                onKeyDown={
-                  state.isSelectable
-                    ? (event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          nodeData.onColumnSelect(nodeData.tableKey, column.name);
-                        }
-                      }
-                    : undefined
-                }
-                role={state.isSelectable ? "button" : undefined}
-                tabIndex={state.isSelectable ? 0 : undefined}
-                title={
-                  state.isRemoveBlocked && nodeData.editMode === "removeColumn"
-                    ? "Cannot remove a PK or FK column"
-                    : undefined
-                }
-              >
-                <span className="table-node__col-name">{column.name}</span>
-                <span className="table-node__col-type">{column.dataType}</span>
-                <span className="table-node__badges">
-                  {column.isPrimaryKey ? <span className="badge badge--pk">PK</span> : null}
-                  {column.isForeignKey ? <span className="badge badge--fk">FK</span> : null}
-                  {!column.nullable ? <span className="badge badge--nn">NN</span> : null}
-                </span>
-              </div>
-              {nodeData.showDescriptions && column.description ? (
-                <div className="table-node__description" title={column.description}>
-                  {column.description}
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
+      <div className="table-node__body">
+        {d.columns.map((column) => (
+          <ColumnRow
+            key={column.name}
+            column={column}
+            editable={editable}
+            readOnlyTable={d.readOnly}
+            selected={d.selectedColumnName === column.name}
+            showDescription={d.showDescriptions}
+            removeBlockedReason={removeBlockedReason(column)}
+            onSelect={() => d.onSelectColumn(d.tableKey, column.name)}
+            onRename={(newName) => d.onRenameColumn(d.tableKey, column.name, newName)}
+            onChangeType={(dataType) => d.onChangeType(d.tableKey, column.name, dataType)}
+            onToggleNullable={() => d.onToggleNullable(d.tableKey, column.name)}
+            onEditComment={(comment) => d.onEditComment(d.tableKey, column.name, comment)}
+            onRemove={() => d.onRemoveColumn(d.tableKey, column.name)}
+            onInsertBefore={() => beginAdd(column.name)}
+          />
+        ))}
       </div>
+
+      {editable && adding ? (
+        <div className="table-node__new-row nodrag">
+          <input
+            className="table-node__inline-input"
+            placeholder="name"
+            autoFocus
+            value={adding.name}
+            onChange={(e) => setAdding((cur) => (cur ? { ...cur, name: e.target.value } : cur))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitAdd();
+              if (e.key === "Escape") setAdding(null);
+            }}
+          />
+          <input
+            className="table-node__inline-input table-node__inline-input--type"
+            placeholder="type"
+            value={adding.dataType}
+            onChange={(e) => setAdding((cur) => (cur ? { ...cur, dataType: e.target.value } : cur))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitAdd();
+              if (e.key === "Escape") setAdding(null);
+            }}
+          />
+          <label className="table-node__new-row-null">
+            <input
+              type="checkbox"
+              checked={adding.nullable}
+              onChange={(e) =>
+                setAdding((cur) => (cur ? { ...cur, nullable: e.target.checked } : cur))
+              }
+            />
+            null
+          </label>
+          <button type="button" className="erdforge-btn" onClick={commitAdd}>
+            Add
+          </button>
+          <button
+            type="button"
+            className="erdforge-btn erdforge-btn--ghost"
+            onClick={() => setAdding(null)}
+          >
+            Cancel
+          </button>
+        </div>
+      ) : editable ? (
+        <button
+          type="button"
+          className="table-node__add-row nodrag"
+          onClick={() => beginAdd(undefined)}
+        >
+          + Add column
+        </button>
+      ) : null}
     </div>
   );
 }
