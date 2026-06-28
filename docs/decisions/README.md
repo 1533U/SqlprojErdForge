@@ -19,3 +19,4 @@ immutable once accepted; if a decision changes, add a new ADR that supersedes th
 | [ADR-0012](ADR-0012-allowlist-scope.md) | Allowlist scope: temporal columns, PERIOD, post-`GO` statements | Accepted |
 | [ADR-0013](ADR-0013-canonical-format-rules.md) | Canonical format rules pinned (C4.1–C4.8) — settles P0-15 | Accepted |
 | [ADR-0014](ADR-0014-conflict-detection-recompute.md) | Conflict detection & fail-closed recompute on concurrent file changes — settles P4-4 | Accepted |
+| [ADR-0015](ADR-0015-column-modifier-grammar.md) | Expand modeled column grammar (inline CHECK, computed/PERSISTED, ROWGUIDCOL, FILESTREAM, inline PK/UNIQUE) — settles P0-14b | Accepted |

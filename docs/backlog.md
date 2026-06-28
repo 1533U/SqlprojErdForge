@@ -26,7 +26,7 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 | P0-6 | Idempotency tests incl. all 4 comment slots + footer fallback | done | fixed point green on full corpus |
 | P0-7 | Diagnostics for unsupported constructs | done | loud diagnostics; no crashes |
 | P0-14 | Triage real-project coverage gaps (proc/view files, post-`GO` objects, extra modifiers) | done | triage doc `10-p0-14-coverage-triage.md`; P0-14a shipped |
-| P0-14b | Column-modifier allowlist triage + top-N parser fixes | todo | ~591 warnings on real project; see triage doc |
+| P0-14b | Column-modifier allowlist triage + top-N parser fixes | done | modeled inline CHECK / computed+PERSISTED / ROWGUIDCOL / FILESTREAM / inline PK+UNIQUE; 591→0 modifier warnings; ADR-0015 |
 | P0-15 | Pin exact canonical formatting rules (indent/alignment/casing/bracketing) | done | C4.1–C4.8 in `03-sql-conventions.md`; ADR-0013 |
 
 ## Phase 1 — Read-only live ERD

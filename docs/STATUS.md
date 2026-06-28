@@ -4,21 +4,22 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-28
-**Current phase:** Phase 4 — guardrails (`P4-1`, `P4-2`, `P0-14a`, `P4-3`, `P4-4`, `P4-5`,
-**`P4-6`** done); remaining: optional **`P0-14b`**
-**Overall state:** Phase 0–2 complete. **Phase 3 complete.** **Phase 4 essentially complete:**
+**Current phase:** **Phase 4 fully closed** (`P4-1`, `P4-2`, `P0-14a`, `P4-3`, `P4-4`, `P4-5`,
+`P4-6`, `P0-14b` all done).
+**Overall state:** Phase 0–2 complete. **Phase 3 complete.** **Phase 4 complete:**
 format conformance (`P4-1`), file-role discovery filter (`P0-14a`), DACPAC CI backstop on
 fixtures (`P4-2`), **atomic multi-file Refactor Preview** (`P4-3` — closes `P3-8` partial gap),
 **conflict handling on concurrent file changes** (`P4-4`), **edit comment text** (`P4-5` —
-ninth edit op), **grouped edit toolbar menu** (`P4-6`). Only optional column-modifier
-allowlist triage (`P0-14b`) remains.
+ninth edit op), **grouped edit toolbar menu** (`P4-6`), and **column-modifier grammar**
+(`P0-14b` / ADR-0015 — 591 modifier warnings eliminated, real-project diagnostics 597 → 6).
+Next: v0.1 release prep.
 
 ## Done
 
 - Project scope, architecture, and tech stack defined ([`docs/`](.)).
 - SQL conventions, comment model, and data model specified.
 - Edit/apply UX and phased roadmap documented.
-- 14 ADRs recorded for the key decisions (ADR-0001…0014).
+- 15 ADRs recorded for the key decisions (ADR-0001…0015).
 - Project-management scaffolding in place (AGENTS.md, STATUS, backlog, CHANGELOG).
 - **Test fixture corpus** curated from the example `OSConnectWeylandtsDB` project
   ([`test/fixtures/`](../test/fixtures/)) — clean extension tables, a Syspro mirror table,
@@ -54,7 +55,8 @@ allowlist triage (`P0-14b`) remains.
     `"type": "module"` for the Node spike CLI.
 - **Phase 1 exit criteria verified** (`npm run verify:p1`, 2026-06-25, updated 2026-06-27):
   - Real project ERD: 96 tables, 105 in-project FK edges (20 dangling omitted), ELK layout
-    for all tables in ~750 ms; **597 diagnostics, 0 errors** (after P0-14a file-role filter).
+    for all tables in ~750 ms; **6 diagnostics, 0 errors** (after P0-14b column-modifier
+    grammar; was 597 after P0-14a).
   - Live refresh: re-parse + graph rebuild on fixture edit in ~160 ms (+ 500 ms debounce).
   - Drag-to-persist: layout sidecar write/read roundtrip; saved positions survive refresh.
 - **Phase 2 column comments** (`P2-1`, `P2-2`, 2026-06-27):
@@ -200,14 +202,28 @@ allowlist triage (`P0-14b`) remains.
     and guards them with a compile-enforced `Record<EditOperationId, true>`.
 
   Also restored the missing Phase 2 heading in [`07-roadmap.md`](07-roadmap.md).
+- **Phase 0 / 4 — column-modifier grammar** (`P0-14b`, 2026-06-28):
+  - Parser/emitter now model inline (nameless) `CHECK (…)` (`Column.checks[]`), computed
+    columns `col AS expr` + `PERSISTED`, `ROWGUIDCOL`, `FILESTREAM`, and inline `PRIMARY KEY` /
+    `UNIQUE`; `readExpr` consumes function-call expressions (`NEWSEQUENTIALID()`, `ISNULL(…)`).
+    Modeled as `Column` attributes (no new `Member` kind); emitted in a canonical column order.
+    Fixes a latent bug where computed columns were mis-read as data type `AS`.
+  - Inline `PRIMARY KEY` contributes to the ERD PK badge
+    ([`src/diagram/graphBuild.ts`](../src/diagram/graphBuild.ts)).
+  - **Real project: 591 → 0 unsupported-modifier warnings; total diagnostics 597 → 6** (residual
+    ADR-0012 post-`GO`); all 96 tables reach a canonical fixed point. Gate `npm run verify:p014`
+    extended; fixture [`test/fixtures/edge/dbo.ColumnModifiers.sql`](../test/fixtures/edge/dbo.ColumnModifiers.sql).
+    [ADR-0015](decisions/ADR-0015-column-modifier-grammar.md).
 
 ## In progress
 
-- _None._ Phase 4 guardrails complete; remaining Phase 4 items are optional polish.
+- _None._ Phase 4 fully closed.
 
 ## Next up (immediate — start here next session)
 
-1. **P0-14b** (optional) — column-modifier allowlist triage on real project (~591 warnings).
+1. **v0.1 release prep** — package/publish checklist, README polish, smoke-test the packaged
+   extension. (Optional deferred: `P0-14c` post-`GO` warning downgrade for read-only paths;
+   inline PK/UNIQUE awareness in edit guardrails.)
 
 > Tip: `npm run spike`, `npm run verify:p1`, `npm run verify:p3`, `npm run verify:p4`,
 > `npm run verify:p014`, `npm run verify:format`, `npm run format:check`,
@@ -245,6 +261,8 @@ allowlist triage (`P0-14b`) remains.
   ([ADR-0009](decisions/ADR-0009-parser-recursive-descent.md)).
 - **Allowlist scope:** temporal columns + `PERIOD` modeled; post-`GO` content is a
   non-excluding diagnostic ([ADR-0012](decisions/ADR-0012-allowlist-scope.md)).
+- **Column-modifier grammar:** inline CHECK, computed/PERSISTED, ROWGUIDCOL, FILESTREAM, and
+  inline PK/UNIQUE modeled as `Column` attributes ([ADR-0015](decisions/ADR-0015-column-modifier-grammar.md)).
 - Earlier: relationships are FK-only (C10/ADR-0008); commented-out schema ignored (C9).
 
 ## Open decisions (tracked, not yet final)
@@ -267,8 +285,9 @@ allowlist triage (`P0-14b`) remains.
 - 760 build items → 96 tables parsed, 664 skipped: most skips are proc/view/function `.sql`
   files (no top-level `CREATE TABLE`), correctly ignored via file-role detection (`P0-14a`).
 - ~~9 "expected table name" errors~~ — **fixed** (proc `#temp` tables no longer parsed as table files).
-- ~597 warnings: **591** unsupported column modifiers + **6** post-`GO` content (ADR-0012).
-  See [`10-p0-14-coverage-triage.md`](10-p0-14-coverage-triage.md); optional allowlist work → `P0-14b`.
+- ~~591 unsupported column modifiers~~ — **fixed** (`P0-14b` / ADR-0015: inline CHECK,
+  computed/PERSISTED, ROWGUIDCOL, FILESTREAM, inline PK/UNIQUE now modeled). **6** post-`GO`
+  warnings remain (ADR-0012). See [`10-p0-14-coverage-triage.md`](10-p0-14-coverage-triage.md).
 
 ## Pointers
 

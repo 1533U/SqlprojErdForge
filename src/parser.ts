@@ -250,6 +250,11 @@ function parseColumn(code: Token[], file: string, diagnostics: Diagnostic[]): Co
   let p = 0;
   const name = (code[p++] as Token).value;
 
+  // Computed column: `name AS <expr> [PERSISTED] [NOT NULL | NULL]` — there is no data type.
+  if (isKw(code[p], "AS")) {
+    return parseComputedColumn(name, code, p + 1, file, diagnostics);
+  }
+
   const typeTok = code[p];
   if (!isName(typeTok)) {
     diagnostics.push(diag(file, typeTok, `Expected a data type for column '${name}'`));
@@ -331,11 +336,75 @@ function parseColumn(code: Token[], file: string, diagnostics: Diagnostic[]): Co
       }
       continue;
     }
-    if (t.kind === "ident" && u === "AS") {
+    if (t.kind === "ident" && u === "CHECK") {
       p++;
       const r = readExpr(code, p);
-      col.computed = r.text;
+      (col.checks ??= []).push(r.text);
       p = r.next;
+      continue;
+    }
+    if (t.kind === "ident" && u === "PRIMARY" && isKw(code[p + 1], "KEY")) {
+      col.primaryKeyInline = true;
+      p += 2;
+      if (isKw(code[p], "CLUSTERED") || isKw(code[p], "NONCLUSTERED")) p++;
+      continue;
+    }
+    if (t.kind === "ident" && u === "UNIQUE") {
+      col.uniqueInline = true;
+      p++;
+      if (isKw(code[p], "CLUSTERED") || isKw(code[p], "NONCLUSTERED")) p++;
+      continue;
+    }
+    if (t.kind === "ident" && u === "ROWGUIDCOL") {
+      col.rowguidcol = true;
+      p++;
+      continue;
+    }
+    if (t.kind === "ident" && u === "FILESTREAM") {
+      col.filestream = true;
+      p++;
+      continue;
+    }
+    diagnostics.push(diag(file, t, `Unsupported column modifier '${t.value}' on '${name}'`, "warning"));
+    p++;
+  }
+
+  return col;
+}
+
+/** Parse a computed column body after the `AS` keyword: `<expr> [PERSISTED] [NOT NULL | NULL]`. */
+function parseComputedColumn(
+  name: string,
+  code: Token[],
+  start: number,
+  file: string,
+  diagnostics: Diagnostic[],
+): Column | undefined {
+  let p = start;
+  const expr = readExpr(code, p);
+  if (!expr.text) {
+    diagnostics.push(diag(file, code[p], `Expected a computed expression for column '${name}'`));
+    return undefined;
+  }
+  p = expr.next;
+  const col: Column = { kind: "column", name, dataType: "", nullable: true, computed: expr.text };
+
+  while (p < code.length) {
+    const t = code[p] as Token;
+    const u = t.value.toUpperCase();
+    if (t.kind === "ident" && u === "PERSISTED") {
+      col.persisted = true;
+      p++;
+      continue;
+    }
+    if (t.kind === "ident" && u === "NOT" && isKw(code[p + 1], "NULL")) {
+      col.nullable = false;
+      p += 2;
+      continue;
+    }
+    if (t.kind === "ident" && u === "NULL") {
+      col.nullable = true;
+      p++;
       continue;
     }
     diagnostics.push(diag(file, t, `Unsupported column modifier '${t.value}' on '${name}'`, "warning"));
@@ -462,13 +531,37 @@ interface ExprResult {
   next: number;
 }
 
-/** Read a balanced parenthesized expression (or a single token) and render it canonically. */
+/**
+ * Read an expression and render it canonically. Handles three shapes:
+ *  - a balanced parenthesized group, e.g. `('M')`, `(GETUTCDATE())`;
+ *  - a function call `name( … )`, e.g. `NEWSEQUENTIALID()`, `ISNULL(DATALENGTH([b]), 0)`;
+ *  - a single bare token, e.g. `NEWID` (degenerate / no-arg reference).
+ */
 function readExpr(code: Token[], start: number): ExprResult {
   let p = start;
+  // Function call: an identifier immediately followed by '('.
+  if (isName(code[p]) && isPunct(code[p + 1], "(")) {
+    const slice: Token[] = [code[p++] as Token];
+    const group = readBalanced(code, p);
+    slice.push(...group.slice);
+    return { text: renderTokens(slice), next: group.next };
+  }
   if (!isPunct(code[p], "(")) {
     const t = code[p];
     return { text: t ? renderTokens([t]) : "", next: p + 1 };
   }
+  const group = readBalanced(code, p);
+  return { text: renderTokens(group.slice), next: group.next };
+}
+
+interface BalancedResult {
+  slice: Token[];
+  next: number;
+}
+
+/** Collect a balanced `( … )` group starting at an opening paren. */
+function readBalanced(code: Token[], start: number): BalancedResult {
+  let p = start;
   let d = 0;
   const slice: Token[] = [];
   for (; p < code.length; p++) {
@@ -483,7 +576,7 @@ function readExpr(code: Token[], start: number): ExprResult {
       }
     }
   }
-  return { text: renderTokens(slice), next: p };
+  return { slice, next: p };
 }
 
 interface ActionResult {

@@ -50,12 +50,27 @@ export interface Column {
   identity?: { seed: number; increment: number };
   /** Raw default expression, e.g. "(GETUTCDATE())". */
   default?: string;
-  /** Raw computed expression, if a computed column. */
+  /** Raw computed expression, if a computed column (`col AS expr`). */
   computed?: string;
+  /** ADR-0015: PERSISTED flag on a computed column. */
+  persisted?: boolean;
   /** Collation name, e.g. "Latin1_General_BIN". */
   collate?: string;
   /** ADR-0012: temporal system-versioning column. */
   generatedAs?: GeneratedAs;
+  /**
+   * ADR-0015: inline (nameless) column-level CHECK expressions, in source order,
+   * preserved verbatim (canonically rendered), e.g. "([x]='Y' OR [x]='N')".
+   */
+  checks?: string[];
+  /** ADR-0015: inline `PRIMARY KEY` on the column definition. */
+  primaryKeyInline?: boolean;
+  /** ADR-0015: inline `UNIQUE` on the column definition. */
+  uniqueInline?: boolean;
+  /** ADR-0015: `ROWGUIDCOL` storage attribute. */
+  rowguidcol?: boolean;
+  /** ADR-0015: `FILESTREAM` storage attribute. */
+  filestream?: boolean;
   leadingComments?: string[];
   trailingComment?: string;
 }

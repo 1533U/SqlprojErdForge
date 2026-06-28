@@ -1,21 +1,23 @@
 # 10 — P0-14 real-project coverage triage
 
 > Triage output from `npm run spike:real` against OSConnectWeylandtsDB (~760 build items).
-> Last run: 2026-06-27 (after P0-14a file-role filter).
+> Last run: 2026-06-28 (after P0-14b column-modifier grammar, ADR-0015).
 
 ## Summary
 
-| Metric | Before P0-14a | After P0-14a |
-|---|---:|---:|
-| Parsed tables | 96 | 96 |
-| Skipped build items | 664 | 664 |
-| Diagnostics (total) | 606 | 597 |
-| Errors | 9 | **0** |
-| Warnings | 597 | 597 |
+| Metric | Before P0-14a | After P0-14a | After P0-14b |
+|---|---:|---:|---:|
+| Parsed tables | 96 | 96 | 96 |
+| Skipped build items | 664 | 664 | 664 |
+| Diagnostics (total) | 606 | 597 | **6** |
+| Errors | 9 | **0** | 0 |
+| Warnings | 597 | 597 | **6** |
 
-**Conclusion:** All nine errors were false positives — stored-proc files whose nested `#temp`
-`CREATE TABLE` was mistaken for a top-level table file. File-role detection fixes them without
-changing the table model.
+**Conclusion:** The nine original errors were proc-file false positives, fixed by file-role
+detection (P0-14a). The 591 remaining "unsupported column modifier" warnings collapsed to
+**five** column constructs the parser couldn't consume as a unit; modeling them (P0-14b /
+ADR-0015) reduced total diagnostics to the **6** residual ADR-0012 post-`GO` warnings, with
+all 96 tables still round-tripping to a canonical fixed point.
 
 ## Buckets
 
@@ -44,25 +46,29 @@ contain `#temp` tables → parser error `Expected table name after CREATE TABLE`
 
 No change needed unless bulk migration or explicit “strip post-GO” emitter work is approved.
 
-### Triage — unsupported column modifiers (P0-14b)
+### Done — P0-14b column-modifier grammar (ADR-0015)
 
-| Pattern | Count | Notes |
-|---|---:|---|
-| `Unsupported column modifier '…' on '…'` | **591** | Dominates Problems panel noise on real project |
+The 591 "unsupported column modifier" warnings were **not** a long tail of exotic features.
+They collapsed to **five** column constructs the parser couldn't consume as a unit (so it
+warned once per leftover token). Categorized by construct from the real project:
 
-**Next step (optional backlog item P0-14b):** Sample the top modifier tokens from real-project
-table files (likely `SPARSE`, `FILESTREAM`, computed/temporal extras, etc.). For each:
+| Construct | Warnings | Files | Decision |
+|---|---:|---|---|
+| Inline (nameless) column `CHECK (…)` | 545 | 3 | **Model + emit** (`Column.checks[]`) |
+| Computed column `col AS expr` (+ `PERSISTED`) | 28 | 3 | **Model + emit** (fix `AS`-as-type bug; `persisted`) |
+| `ROWGUIDCOL` + inline `UNIQUE` + `DEFAULT NEWSEQUENTIALID()` | 13 | 4 | **Model + emit** (`rowguidcol`, `uniqueInline`; `readExpr` func calls) |
+| `FILESTREAM` | 3 | 3 | **Model + emit** (`filestream`) |
+| Inline `PRIMARY KEY` | 2 | 1 | **Model + emit** (`primaryKeyInline`) + ERD PK badge |
 
-- **Model + emit** if common on extension (`pr_*`) tables and needed for edits.
-- **Downgrade to info / suppress** if Syspro mirror-only and read-only (ADR-0011).
-- **Keep warning** if rare and risky to misread.
+All five occur on **editable** extension tables, so modeling + emitting (not
+downgrade-and-drop) is required for round-trip and edit safety. **Result: 591 → 0 modifier
+warnings; total 597 → 6.** All 96 tables still reach a canonical fixed point. See
+[ADR-0015](decisions/ADR-0015-column-modifier-grammar.md).
 
-Run a one-off categorization script when starting P0-14b:
-
-```bash
-npm run spike:real   # summary categories
-# then grep parser warnings or extend spike:real with modifier token breakdown
-```
+**Fix:** `src/model.ts` (Column attributes), `src/parser.ts` (computed detection, function-call
+`readExpr`, new modifier branches), `src/emitter.ts` (canonical column order),
+`src/diagram/graphBuild.ts` (inline-PK badge). Fixture:
+[`test/fixtures/edge/dbo.ColumnModifiers.sql`](../test/fixtures/edge/dbo.ColumnModifiers.sql).
 
 ### Out of scope
 
@@ -76,12 +82,12 @@ npm run spike:real   # summary categories
 | ID | Task | Priority |
 |---|---|---|
 | P0-14a | File-role detection before table parse | **done** |
-| P0-14b | Column-modifier allowlist triage + top-N fixes | medium |
+| P0-14b | Column-modifier grammar (inline CHECK / computed / ROWGUIDCOL / FILESTREAM / inline PK+UNIQUE) | **done** (ADR-0015) |
 | P0-14c | Optional: downgrade post-GO warnings for read-only mirror paths | low |
 
 ## Verification gate
 
 ```bash
 npm run verify:p014 && npm run spike:real
-# expect: 96 tables, 0 errors, ~597 warnings
+# expect: 96 tables, 0 errors, 6 warnings (post-GO residue), 0 modifier warnings
 ```

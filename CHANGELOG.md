@@ -8,6 +8,28 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 ## [Unreleased]
 
 ### Added
+- **P0-14b — column-modifier grammar (ADR-0015):** the parser/emitter now model five column
+  constructs that previously produced 591 "unsupported column modifier" warnings on the real
+  `OSConnectWeylandtsDB` project — inline (nameless) `CHECK (…)` (`Column.checks[]`), computed
+  columns `col AS expr` with optional `PERSISTED`, `ROWGUIDCOL`, `FILESTREAM`, and inline
+  `PRIMARY KEY` / `UNIQUE`. `readExpr` also consumes function-call expressions so
+  `DEFAULT NEWSEQUENTIALID()` and computed bodies like `ISNULL(DATALENGTH([b]), 0)` round-trip.
+  Modeled as `Column` attributes (no new `Member` kind), emitted in a canonical column order.
+  Inline `PRIMARY KEY` now contributes its column to the ERD PK badge
+  ([`src/diagram/graphBuild.ts`](src/diagram/graphBuild.ts)). **Real project: 591 → 0 modifier
+  warnings; total diagnostics 597 → 6 (residual ADR-0012 post-`GO` warnings); all 96 tables
+  reach a canonical fixed point.** Green gate `npm run verify:p014` extended with per-construct
+  modeling checks, a fixed-point assertion, and the real-project count assertions; new fixture
+  [`test/fixtures/edge/dbo.ColumnModifiers.sql`](test/fixtures/edge/dbo.ColumnModifiers.sql).
+  [ADR-0015](docs/decisions/ADR-0015-column-modifier-grammar.md).
+
+### Fixed
+- **Computed columns mis-parsed as data type:** `col AS expr` was previously read as a column
+  whose data type is the literal token `AS` (then warned per expression token) and never
+  round-tripped. Computed columns are now detected at the type position and emit faithfully
+  (P0-14b / ADR-0015).
+
+### Added (earlier)
 - **P4-5 — edit comment text on the diagram:** ninth edit op `src/edits/editComment.ts` sets,
   changes, or clears a column's trailing comment (blank input clears) via the same
   preview→apply pipeline. Added through the single-source `EditIntentMap` so the registry,

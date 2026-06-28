@@ -40,10 +40,20 @@ interface Column {
   nullable: boolean;
   identity?: { seed: number; increment: number };
   default?: string;          // raw default expression, e.g. "(getutcdate())"
-  computed?: string;         // raw computed expression, if a computed column
+  computed?: string;         // raw computed expression, if a computed column (`col AS expr`)
+  persisted?: boolean;       // PERSISTED on a computed column (ADR-0015)
+  collate?: string;          // collation name
+  generatedAs?: "rowStart" | "rowEnd"; // temporal system-versioning column (ADR-0012)
+  checks?: string[];         // inline nameless CHECK expressions, in source order (ADR-0015)
+  primaryKeyInline?: boolean; // inline PRIMARY KEY on the column (ADR-0015)
+  uniqueInline?: boolean;    // inline UNIQUE on the column (ADR-0015)
+  rowguidcol?: boolean;      // ROWGUIDCOL storage attribute (ADR-0015)
+  filestream?: boolean;      // FILESTREAM storage attribute (ADR-0015)
   leadingComments?: string[];
   trailingComment?: string;  // shown on the ERD as the column description
 }
+// Note: `Member` also includes a `PeriodForSystemTime` kind (ADR-0012). The authoritative
+// model lives in `src/model.ts`; ADR-0012 / ADR-0015 record the column-grammar extensions.
 
 type Constraint =
   | PrimaryKeyConstraint

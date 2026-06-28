@@ -56,10 +56,18 @@ function emitMember(member: Member): string {
 
 function emitColumn(col: Column): string {
   if (col.computed !== undefined) {
-    return `${ident(col.name)} AS ${col.computed}`;
+    const parts: string[] = [ident(col.name), "AS", col.computed];
+    if (col.persisted) {
+      // A null clause is only meaningful on a PERSISTED computed column.
+      parts.push("PERSISTED");
+      parts.push(col.nullable ? "NULL" : "NOT NULL");
+    }
+    return parts.join(" ");
   }
   const parts: string[] = [ident(col.name), col.dataType];
   if (col.collate) parts.push(`COLLATE ${col.collate}`);
+  if (col.filestream) parts.push("FILESTREAM");
+  if (col.rowguidcol) parts.push("ROWGUIDCOL");
   if (col.generatedAs) {
     // Temporal columns are implicitly NOT NULL; no null clause is emitted.
     parts.push(col.generatedAs === "rowStart" ? "GENERATED ALWAYS AS ROW START" : "GENERATED ALWAYS AS ROW END");
@@ -74,6 +82,9 @@ function emitColumn(col: Column): string {
     );
   }
   if (col.default !== undefined) parts.push(`DEFAULT ${col.default}`);
+  if (col.primaryKeyInline) parts.push("PRIMARY KEY");
+  if (col.uniqueInline) parts.push("UNIQUE");
+  for (const chk of col.checks ?? []) parts.push(`CHECK ${chk}`);
   return parts.join(" ");
 }
 

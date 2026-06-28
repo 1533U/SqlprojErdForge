@@ -104,8 +104,8 @@ export async function runVerifyP1(): Promise<void> {
     h.check("ELK positions every table", positioned === realPayload.tables.length);
     h.check("scale build under 3 s", totalMs < 3000, `${totalMs.toFixed(0)} ms`);
     h.check(
-      "Problems-scale diagnostics present (warnings only after P0-14a)",
-      model.diagnostics.length >= 590 &&
+      "diagnostics are warnings only, reduced to post-GO residue (after P0-14b)",
+      model.diagnostics.length === 6 &&
         model.diagnostics.filter((d) => d.severity === "error").length === 0,
     );
     console.log(

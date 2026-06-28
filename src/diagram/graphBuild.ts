@@ -20,6 +20,8 @@ function tableToGraph(table: Table): GraphTable {
   const fkColumns = new Set<string>();
 
   for (const member of table.members) {
+    // ADR-0015: an inline `PRIMARY KEY` on a column definition marks that column as a PK.
+    if (member.kind === "column" && member.primaryKeyInline) pkColumns.add(member.name);
     if (member.kind !== "constraint") continue;
     switch (member.constraintType) {
       case "primaryKey":
