@@ -4,14 +4,14 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-28
-**Current phase:** Phase 4 — guardrails (`P4-1`, `P4-2`, `P0-14a`, `P4-3`, **`P4-4`** done);
-remaining: optional **`P4-5`**, **`P4-6`**, **`P0-14b`**
+**Current phase:** Phase 4 — guardrails (`P4-1`, `P4-2`, `P0-14a`, `P4-3`, `P4-4`, **`P4-6`** done);
+remaining: optional **`P4-5`**, **`P0-14b`**
 **Overall state:** Phase 0–2 complete. **Phase 3 complete.** **Phase 4 guardrails:** format
 conformance (`P4-1`), file-role discovery filter (`P0-14a`), DACPAC CI backstop on fixtures
 (`P4-2`), **atomic multi-file Refactor Preview** (`P4-3` — closes `P3-8` partial gap),
-**conflict handling on concurrent file changes** (`P4-4`). Remaining Phase 4 items are
-optional polish: edit comment text (`P4-5`), toolbar grouping (`P4-6`), allowlist triage
-(`P0-14b`).
+**conflict handling on concurrent file changes** (`P4-4`), **grouped edit toolbar menu**
+(`P4-6`). Remaining Phase 4 items are optional polish: edit comment text (`P4-5`), allowlist
+triage (`P0-14b`).
 
 ## Done
 
@@ -174,6 +174,12 @@ optional polish: edit comment text (`P4-5`), toolbar grouping (`P4-6`), allowlis
   - Green gate **`npm run verify:p4`** ([`src/verify/p4/conflict.ts`](../src/verify/p4/conflict.ts)):
     real temp-file checks prove fail-closed for scenarios (a) single-file change, (b) stale
     batch member, (c) watcher refresh mid-edit. Added to CI.
+- **Phase 4 — grouped edit toolbar menu** (`P4-6`, 2026-06-28):
+  - [`webview/src/EditMenu.tsx`](../webview/src/EditMenu.tsx) collapses the eight header edit
+    buttons into a single **Edit…** dropdown (trigger shows the active mode label). Operation
+    labels live in a `Record<Exclude<EditMode, "none">, …>` so a new edit mode is a compile
+    error until labelled. Closes on outside-click / Escape. Behavior unchanged — same
+    `startEditMode` wiring; typecheck, compile, and the full verify gate green.
 - **Health check + refactor** (2026-06-28): all gates green
   (`typecheck`, `compile`, `spike`, `verify:p1/p3/p014/format`). Two behavior-preserving
   slices give the edit-op set a single source of truth:
@@ -192,8 +198,7 @@ optional polish: edit comment text (`P4-5`), toolbar grouping (`P4-6`), allowlis
 ## Next up (immediate — start here next session)
 
 1. **P4-5** (optional) — edit comment text on the diagram.
-2. **P4-6** (optional polish) — group crowded webview edit toolbar (Edit… menu).
-3. **P0-14b** (optional) — column-modifier allowlist triage on real project (~591 warnings).
+2. **P0-14b** (optional) — column-modifier allowlist triage on real project (~591 warnings).
 
 > Tip: `npm run spike`, `npm run verify:p1`, `npm run verify:p3`, `npm run verify:p4`,
 > `npm run verify:p014`, `npm run verify:format`, `npm run format:check`,
@@ -245,8 +250,8 @@ optional polish: edit comment text (`P4-5`), toolbar grouping (`P4-6`), allowlis
 - **Multi-file Refactor Preview (`P4-3`)** — **done.** Multi-candidate edits apply atomically
   via VS Code Refactor Preview; rename table uses `renameFile` pairing. Single-file diff
   preview unchanged.
-- **Webview header crowding** — eight edit buttons in the toolbar; consider an **Edit…**
-  dropdown/menu (`P4-6` in backlog). Not blocking Phase 4.
+- **Webview header crowding** — **resolved** (`P4-6`). The eight edit buttons are now a single
+  **Edit…** dropdown ([`webview/src/EditMenu.tsx`](../webview/src/EditMenu.tsx)).
 
 ## Real-project coverage gaps from the P0-13 smoke test (triage as P0-14)
 

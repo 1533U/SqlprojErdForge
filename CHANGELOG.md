@@ -8,6 +8,12 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 ## [Unreleased]
 
 ### Added
+- **P4-6 — grouped edit toolbar menu:** `webview/src/EditMenu.tsx` collapses the eight
+  header edit buttons into a single **Edit…** dropdown (trigger reflects the active mode;
+  closes on outside-click / Escape). Operation labels live in a
+  `Record<Exclude<EditMode, "none">, …>` so a new edit mode is a compile error until
+  labelled. Behavior unchanged (same `startEditMode` wiring; typecheck, compile, full verify
+  gate green).
 - **P4-4 — conflict handling on concurrent file changes:** shared pure detector
   `src/edits/conflict.ts` (`CandidateConflict` union + `detectCandidateConflict` /
   `detectBatchConflict`) recomputes the content hash against current disk content at apply

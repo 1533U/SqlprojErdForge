@@ -73,4 +73,4 @@ Granular task list grouped by roadmap phase. Update statuses here as part of the
 | P4-3 | Refactor Preview for multi-file edits | done | atomic apply; rename table `renamePairKey` pairing; plan `11-p4-3-refactor-preview-plan.md` |
 | P4-4 | Conflict handling on concurrent file changes | done | shared `src/edits/conflict.ts` detector; fail-closed + Recompute preview; `npm run verify:p4`; ADR-0014 |
 | P4-5 | Edit comment text on the diagram | todo | |
-| P4-6 | Group webview edit toolbar (Edit… menu) | todo | eight header buttons today |
+| P4-6 | Group webview edit toolbar (Edit… menu) | done | `webview/src/EditMenu.tsx` collapses eight buttons into one dropdown; typed `Record<EditMode,…>` label map |

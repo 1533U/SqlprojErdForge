@@ -14,6 +14,7 @@ import {
   inboundFkWarningForDrop,
 } from "../../src/edits/editInteraction";
 import { ErdCanvas } from "./canvas/ErdCanvas";
+import { EditMenu } from "./EditMenu";
 import type {
   EditMode,
   EditSessionState,
@@ -429,62 +430,7 @@ export function App() {
           />
           Show column descriptions
         </label>
-        <button
-          type="button"
-          className={`erdforge-btn${edit.mode === "addFk" ? " erdforge-btn--active" : ""}`}
-          onClick={() => startEditMode("addFk")}
-        >
-          {edit.mode === "addFk" ? "Adding FK…" : "Add FK"}
-        </button>
-        <button
-          type="button"
-          className={`erdforge-btn${edit.mode === "addColumn" ? " erdforge-btn--active" : ""}`}
-          onClick={() => startEditMode("addColumn")}
-        >
-          {edit.mode === "addColumn" ? "Adding column…" : "Add column"}
-        </button>
-        <button
-          type="button"
-          className={`erdforge-btn${edit.mode === "removeColumn" ? " erdforge-btn--active" : ""}`}
-          onClick={() => startEditMode("removeColumn")}
-        >
-          {edit.mode === "removeColumn" ? "Removing column…" : "Remove column"}
-        </button>
-        <button
-          type="button"
-          className={`erdforge-btn${edit.mode === "renameColumn" ? " erdforge-btn--active" : ""}`}
-          onClick={() => startEditMode("renameColumn")}
-        >
-          {edit.mode === "renameColumn" ? "Renaming column…" : "Rename column"}
-        </button>
-        <button
-          type="button"
-          className={`erdforge-btn${edit.mode === "changeColumn" ? " erdforge-btn--active" : ""}`}
-          onClick={() => startEditMode("changeColumn")}
-        >
-          {edit.mode === "changeColumn" ? "Changing column…" : "Change column"}
-        </button>
-        <button
-          type="button"
-          className={`erdforge-btn${edit.mode === "addTable" ? " erdforge-btn--active" : ""}`}
-          onClick={() => startEditMode("addTable")}
-        >
-          {edit.mode === "addTable" ? "Adding table…" : "Add table"}
-        </button>
-        <button
-          type="button"
-          className={`erdforge-btn${edit.mode === "dropTable" ? " erdforge-btn--active" : ""}`}
-          onClick={() => startEditMode("dropTable")}
-        >
-          {edit.mode === "dropTable" ? "Dropping table…" : "Drop table"}
-        </button>
-        <button
-          type="button"
-          className={`erdforge-btn${edit.mode === "renameTable" ? " erdforge-btn--active" : ""}`}
-          onClick={() => startEditMode("renameTable")}
-        >
-          {edit.mode === "renameTable" ? "Renaming table…" : "Rename table"}
-        </button>
+        <EditMenu activeMode={edit.mode} onSelect={startEditMode} />
       </header>
       <div className="erdforge-canvas">
         <ReactFlowProvider>
