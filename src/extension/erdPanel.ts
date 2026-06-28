@@ -195,7 +195,11 @@ export class ErdPanel {
       return;
     }
 
-    await this.diffPreview.show(result.candidates, title);
+    const recompute = async (): Promise<void> => {
+      await this.refresh();
+      await this.handleEditMessage(message);
+    };
+    await this.diffPreview.show(result.candidates, title, recompute);
     this.postMessage({ type: "editResult", ok: true });
   }
 

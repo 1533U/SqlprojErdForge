@@ -8,6 +8,15 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 ## [Unreleased]
 
 ### Added
+- **P4-4 — conflict handling on concurrent file changes:** shared pure detector
+  `src/edits/conflict.ts` (`CandidateConflict` union + `detectCandidateConflict` /
+  `detectBatchConflict`) recomputes the content hash against current disk content at apply
+  time for both the single-file diff path and the multi-file batch path. Conflicts **fail
+  closed** (never overwrite) and offer a **Recompute preview** action that rebuilds from
+  fresh disk/model. Green gate `npm run verify:p4` (`src/verify/p4/conflict.ts`) proves
+  fail-closed behaviour on real temp files for single-file change, stale batch member, and
+  watcher-refresh-mid-edit scenarios; added to CI.
+  [ADR-0014](docs/decisions/ADR-0014-conflict-detection-recompute.md).
 - **P4-3 — Refactor Preview / atomic multi-file apply:** multi-candidate edits (rename table,
   rename column with inbound FKs, add/drop table) use VS Code Refactor Preview (`WorkspaceEdit`
   + `needsConfirmation`); single-file edits keep diff editor + Apply/Discard; rename table
@@ -27,6 +36,10 @@ Append meaningful changes to `Unreleased` as part of the "document progress" rou
 - **P0-15 — canonical format rules:** C4.1–C4.8 in `docs/03-sql-conventions.md`; [ADR-0013](docs/decisions/ADR-0013-canonical-format-rules.md) pins emitter output as the spec for `P4-1`.
 
 ### Changed
+- **Refactor — unified conflict detection:** `validateCandidateBatch` now delegates to the
+  shared `detectBatchConflict`, and the single-file apply path uses `detectCandidateConflict`
+  instead of inline checks; removed the now-dead `readCandidateDiskContent` helper. Behavior
+  preserved (`npm run verify:p3`/`verify:p4`, typecheck, compile green).
 - **Refactor — protocol derives the edit-op set:** `EditIntentMap` / `EditOperationId` now live in
   `src/edits/types.ts` (single source of truth). `src/protocol/messages.ts` derives the
   `WebviewToHostMessage` edit variants from `EditIntentMap` via a mapped type and guards them with a

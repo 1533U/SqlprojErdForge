@@ -2,9 +2,8 @@
  * Headless helpers for multi-candidate (atomic) edit batches — P4-3.
  */
 
-import { existsSync, readFileSync } from "node:fs";
 import type { EditValidationResult, FileEditCandidate } from "./types.ts";
-import { contentRevision } from "./paths.ts";
+import { conflictMessage, detectBatchConflict } from "./conflict.ts";
 
 export interface RenamePair {
   deleteCandidate: FileEditCandidate;
@@ -55,24 +54,9 @@ export function candidateEditLabel(candidate: FileEditCandidate): string {
   return `Update ${candidate.sourceFile}`;
 }
 
-/** Read current on-disk content for revision comparison (empty string when absent). */
-export function readCandidateDiskContent(candidate: FileEditCandidate): string {
-  if (candidate.isNewFile) {
-    if (existsSync(candidate.absPath)) {
-      return readFileSync(candidate.absPath, "utf8");
-    }
-    return "";
-  }
-
-  if (!existsSync(candidate.absPath)) {
-    throw new Error(`Source file not found: ${candidate.sourceFile}`);
-  }
-
-  return readFileSync(candidate.absPath, "utf8");
-}
-
 /**
  * Verify every candidate still matches its preview-time revision before batch apply.
+ * Delegates conflict detection to the shared {@link detectBatchConflict} (P4-4).
  */
 export function validateCandidateBatch(
   candidates: FileEditCandidate[],
@@ -81,42 +65,9 @@ export function validateCandidateBatch(
     return { ok: false, message: "No edit candidates to apply." };
   }
 
-  for (const candidate of candidates) {
-    if (candidate.isNewFile) {
-      if (existsSync(candidate.absPath)) {
-        return {
-          ok: false,
-          message: `File already exists: ${candidate.sourceFile}. Discard and retry the edit from the ERD.`,
-        };
-      }
-      continue;
-    }
-
-    if (candidate.isDeleteFile) {
-      if (!existsSync(candidate.absPath)) {
-        return {
-          ok: false,
-          message: `File already deleted: ${candidate.sourceFile}. Discard and retry the edit from the ERD.`,
-        };
-      }
-    }
-
-    let diskContent: string;
-    try {
-      diskContent = readCandidateDiskContent(candidate);
-    } catch {
-      return {
-        ok: false,
-        message: `Source file not found: ${candidate.sourceFile}. Discard and retry the edit from the ERD.`,
-      };
-    }
-
-    if (contentRevision(diskContent) !== candidate.originalRevision) {
-      return {
-        ok: false,
-        message: `${candidate.sourceFile} changed since the preview was generated. Discard and retry the edit from the ERD.`,
-      };
-    }
+  const conflict = detectBatchConflict(candidates);
+  if (conflict.kind !== "none") {
+    return { ok: false, message: conflictMessage(conflict) };
   }
 
   return { ok: true, candidates };

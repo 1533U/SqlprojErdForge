@@ -4,18 +4,21 @@
 > [`../AGENTS.md`](../AGENTS.md).
 
 **Last updated:** 2026-06-28
-**Current phase:** Phase 4 — guardrails (`P4-1`, `P4-2`, `P0-14a`, **`P4-3`** done); next: **`P4-4`** or optional **`P0-14b`**
+**Current phase:** Phase 4 — guardrails (`P4-1`, `P4-2`, `P0-14a`, `P4-3`, **`P4-4`** done);
+remaining: optional **`P4-5`**, **`P4-6`**, **`P0-14b`**
 **Overall state:** Phase 0–2 complete. **Phase 3 complete.** **Phase 4 guardrails:** format
 conformance (`P4-1`), file-role discovery filter (`P0-14a`), DACPAC CI backstop on fixtures
-(`P4-2`), **atomic multi-file Refactor Preview** (`P4-3` — closes `P3-8` partial gap).
-Optional follow-up: column-modifier allowlist triage (`P0-14b`).
+(`P4-2`), **atomic multi-file Refactor Preview** (`P4-3` — closes `P3-8` partial gap),
+**conflict handling on concurrent file changes** (`P4-4`). Remaining Phase 4 items are
+optional polish: edit comment text (`P4-5`), toolbar grouping (`P4-6`), allowlist triage
+(`P0-14b`).
 
 ## Done
 
 - Project scope, architecture, and tech stack defined ([`docs/`](.)).
 - SQL conventions, comment model, and data model specified.
 - Edit/apply UX and phased roadmap documented.
-- 13 ADRs recorded for the key decisions (ADR-0001…0013).
+- 14 ADRs recorded for the key decisions (ADR-0001…0014).
 - Project-management scaffolding in place (AGENTS.md, STATUS, backlog, CHANGELOG).
 - **Test fixture corpus** curated from the example `OSConnectWeylandtsDB` project
   ([`test/fixtures/`](../test/fixtures/)) — clean extension tables, a Syspro mirror table,
@@ -158,6 +161,19 @@ Optional follow-up: column-modifier allowlist triage (`P0-14b`).
     ([`src/edits/batchCandidates.ts`](../src/edits/batchCandidates.ts)).
   - Retired sequential `1/N` diff stepper. Plan: [`11-p4-3-refactor-preview-plan.md`](11-p4-3-refactor-preview-plan.md).
   - `npm run verify:p3` extended with batch validation checks.
+- **Phase 4 — conflict handling on concurrent file changes** (`P4-4`, 2026-06-28):
+  - Shared, pure detector [`src/edits/conflict.ts`](../src/edits/conflict.ts): `CandidateConflict`
+    union + `detectCandidateConflict` / `detectBatchConflict` recompute the content hash against
+    current disk content at **apply time** (not just preview). Single-file
+    ([`diffPreview.ts`](../src/extension/diffPreview.ts)) and batch
+    (`validateCandidateBatch` in [`batchCandidates.ts`](../src/edits/batchCandidates.ts)) paths
+    both use it.
+  - **Fail closed:** any conflict blocks the apply (no overwrite) and offers a **Recompute
+    preview** modal action that rebuilds from fresh disk/model
+    ([`erdPanel.ts`](../src/extension/erdPanel.ts)). Per [ADR-0014](decisions/ADR-0014-conflict-detection-recompute.md).
+  - Green gate **`npm run verify:p4`** ([`src/verify/p4/conflict.ts`](../src/verify/p4/conflict.ts)):
+    real temp-file checks prove fail-closed for scenarios (a) single-file change, (b) stale
+    batch member, (c) watcher refresh mid-edit. Added to CI.
 - **Health check + refactor** (2026-06-28): all gates green
   (`typecheck`, `compile`, `spike`, `verify:p1/p3/p014/format`). Two behavior-preserving
   slices give the edit-op set a single source of truth:
@@ -171,16 +187,17 @@ Optional follow-up: column-modifier allowlist triage (`P0-14b`).
 
 ## In progress
 
-- _None._ Next session: **`P4-4`** conflict handling, or optional **`P0-14b`** / **`P4-6`**.
+- _None._ Phase 4 guardrails complete; remaining Phase 4 items are optional polish.
 
 ## Next up (immediate — start here next session)
 
-1. **P4-4** — conflict handling on concurrent file changes.
-2. **P0-14b** (optional) — column-modifier allowlist triage on real project (~591 warnings).
-3. **P4-6** (optional polish) — group crowded webview edit toolbar.
+1. **P4-5** (optional) — edit comment text on the diagram.
+2. **P4-6** (optional polish) — group crowded webview edit toolbar (Edit… menu).
+3. **P0-14b** (optional) — column-modifier allowlist triage on real project (~591 warnings).
 
-> Tip: `npm run spike`, `npm run verify:p1`, `npm run verify:p3`, `npm run verify:p014`,
-> `npm run verify:format`, `npm run format:check`, `npm run typecheck`, `npm run compile`, then F5.
+> Tip: `npm run spike`, `npm run verify:p1`, `npm run verify:p3`, `npm run verify:p4`,
+> `npm run verify:p014`, `npm run verify:format`, `npm run format:check`,
+> `npm run typecheck`, `npm run compile`, then F5.
 > In the Extension Development Host, **File → Open Folder** to the repo before **Open ERD**.
 
 ## Blocked / needs input

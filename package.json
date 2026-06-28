@@ -73,6 +73,7 @@
     "spike:real": "node src/cli.ts --real",
     "verify:p1": "node src/cli.ts --verify-p1",
     "verify:p3": "node src/cli.ts --verify-p3",
+    "verify:p4": "node src/cli.ts --verify-p4",
     "verify:format": "node src/cli.ts --verify-format",
     "verify:p014": "node src/cli.ts --verify-p014",
     "verify:dacpac": "node src/cli.ts --verify-dacpac",

@@ -5,6 +5,7 @@
  * `--real`: P0-13 discovery smoke test.
  * `--verify-p1`: Phase 1 exit criteria.
  * `--verify-p3`: Phase 3 edit pipeline checks.
+ * `--verify-p4`: P4-4 conflict-handling checks.
  * `--verify-format`: P4-1 format-check machinery tests.
  * `--format-check`: P4-1 conformance gate on changed (or `--files`) `.sql` files.
  * `--verify-p014`: P0-14 file-role detection checks.
@@ -17,6 +18,7 @@ import { runVerifyP014 } from "./verify/p014.ts";
 import { runFixtures } from "./verify/fixtures.ts";
 import { runVerifyP1 } from "./verify/p1.ts";
 import { runVerifyP3 } from "./verify/p3.ts";
+import { runVerifyP4 } from "./verify/p4.ts";
 import { runReal } from "./verify/real.ts";
 
 function parseFormatCheckArgs(argv: string[]): { base?: string; files?: string[] } {
@@ -40,6 +42,8 @@ if (args.includes("--verify-p1")) {
   void runVerifyP1();
 } else if (args.includes("--verify-p3")) {
   runVerifyP3();
+} else if (args.includes("--verify-p4")) {
+  runVerifyP4();
 } else if (args.includes("--verify-format")) {
   runVerifyFormat();
 } else if (args.includes("--verify-p014")) {

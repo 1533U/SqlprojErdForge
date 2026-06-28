@@ -18,3 +18,4 @@ immutable once accepted; if a decision changes, add a new ADR that supersedes th
 | [ADR-0011](ADR-0011-syspro-mirror-read-only.md) | Syspro mirror tables are read-only — settles D2 | Accepted |
 | [ADR-0012](ADR-0012-allowlist-scope.md) | Allowlist scope: temporal columns, PERIOD, post-`GO` statements | Accepted |
 | [ADR-0013](ADR-0013-canonical-format-rules.md) | Canonical format rules pinned (C4.1–C4.8) — settles P0-15 | Accepted |
+| [ADR-0014](ADR-0014-conflict-detection-recompute.md) | Conflict detection & fail-closed recompute on concurrent file changes — settles P4-4 | Accepted |

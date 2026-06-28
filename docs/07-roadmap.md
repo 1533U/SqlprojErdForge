@@ -86,7 +86,9 @@ registry in sync; per-op validate → clone → mutate → candidates pipeline.
 
 - Canonical formatter + CI format check (enforce C4/C5) — **done** (`P4-1`).
 - Optional DACPAC build in CI as the correctness backstop — **done** (`P4-2`).
-- Refactor Preview for multi-file edits — **done** (`P4-3`); conflict handling on concurrent file changes.
+- Refactor Preview for multi-file edits — **done** (`P4-3`).
+- Conflict handling on concurrent file changes — **done** (`P4-4`); fail-closed content-hash
+  detection + Recompute preview ([ADR-0014](decisions/ADR-0014-conflict-detection-recompute.md)).
 - Editing affordances: edit comment text on the diagram, reorder via explicit action, etc.
 
 **Exit criteria:** CI enforces conventions; multi-file edits are safe and previewable.
@@ -104,7 +106,7 @@ registry in sync; per-op validate → clone → mutate → candidates pipeline.
 | | Comment drift | Trivia model + no-reorder rule + dedicated tests | 0 |
 | | Parser too lenient (silent misread) | Fail loudly; DACPAC build as backstop | 0, 4 |
 | | Diagram layout instability | Committed JSON sidecar keyed by identity | 1 |
-| | Stale edit applied after file changed | Recompute candidate + re-prompt on conflict | 3 |
+| | Stale edit applied after file changed | Recompute candidate + re-prompt on conflict — **done** (`P4-4`, ADR-0014); `npm run verify:p4` | 3, 4 |
 | | Multi-file rename inconsistency | Atomic `WorkspaceEdit` + Refactor Preview | 3, 4 |
 
 > Note: ERD relationships are **declared FKs only, never inferred** (convention C10 /

@@ -25,6 +25,7 @@ jobs:
       - run: npm run spike
       - run: npm run verify:p1
       - run: npm run verify:p3
+      - run: npm run verify:p4
       - run: npm run verify:format
       - run: npm run verify:p014
 

@@ -2,22 +2,30 @@
  * Diff editor preview with Apply / Discard (single-file) and Refactor Preview (multi-file) — P3-8 / P4-3.
  */
 
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import * as vscode from "vscode";
+import { candidateEditLabel, findRenamePairs } from "../edits/batchCandidates.ts";
 import {
-  candidateEditLabel,
-  findRenamePairs,
-  validateCandidateBatch,
-} from "../edits/batchCandidates.ts";
-import { contentRevision } from "../edits/paths.ts";
+  conflictMessage,
+  detectBatchConflict,
+  detectCandidateConflict,
+  hasConflict,
+  type CandidateConflict,
+} from "../edits/conflict.ts";
 import type { FileEditCandidate } from "../edits/types.ts";
 
 const SCHEME = "erdforge-candidate";
 
+/** Re-prepare candidates from fresh disk/model and re-open the preview. */
+export type RecomputeEdit = () => Promise<void>;
+
+const RECOMPUTE_ACTION = "Recompute preview";
+
 interface PendingEdit {
   candidate: FileEditCandidate;
   title: string;
+  recompute?: RecomputeEdit;
 }
 
 class CandidateContentProvider implements vscode.TextDocumentContentProvider {
@@ -68,28 +76,36 @@ export class DiffPreviewController {
     return { dispose: () => this.onAppliedListeners.delete(listener) };
   }
 
-  async show(candidates: FileEditCandidate[], title: string): Promise<void> {
+  async show(
+    candidates: FileEditCandidate[],
+    title: string,
+    recompute?: RecomputeEdit,
+  ): Promise<void> {
     if (candidates.length === 0) {
       return;
     }
     if (candidates.length === 1) {
       const only = candidates[0];
       if (!only) return;
-      await this.showOne(only, title);
+      await this.showOne(only, title, recompute);
       return;
     }
 
-    await this.showBatchRefactorPreview(candidates, title);
+    await this.showBatchRefactorPreview(candidates, title, recompute);
   }
 
-  private async showOne(candidate: FileEditCandidate, title: string): Promise<void> {
+  private async showOne(
+    candidate: FileEditCandidate,
+    title: string,
+    recompute?: RecomputeEdit,
+  ): Promise<void> {
     if (this.activeSessionId) {
       this.provider.deleteSession(this.activeSessionId);
     }
 
     const sessionId = `edit-${Date.now()}`;
     this.activeSessionId = sessionId;
-    this.provider.setSession(sessionId, { candidate, title });
+    this.provider.setSession(sessionId, { candidate, title, recompute });
     await vscode.commands.executeCommand("setContext", "erdforge.pendingEdit", true);
 
     const originalUri = vscode.Uri.file(candidate.absPath);
@@ -111,12 +127,13 @@ export class DiffPreviewController {
   private async showBatchRefactorPreview(
     candidates: FileEditCandidate[],
     title: string,
+    recompute?: RecomputeEdit,
   ): Promise<void> {
     await this.clearActive();
 
-    const validation = validateCandidateBatch(candidates);
-    if (!validation.ok) {
-      void vscode.window.showWarningMessage(`ErdForge: ${validation.message}`);
+    const conflict = detectBatchConflict(candidates);
+    if (hasConflict(conflict)) {
+      await this.promptConflict(conflict, recompute);
       return;
     }
 
@@ -145,42 +162,13 @@ export class DiffPreviewController {
       return;
     }
 
-    const { candidate, title } = pending;
-    let currentContent: string;
-    if (candidate.isNewFile) {
-      if (existsSync(candidate.absPath)) {
-        void vscode.window.showWarningMessage(
-          "ErdForge: the file was created since the preview was generated. Discard and retry the edit from the ERD.",
-        );
-        return;
-      }
-      currentContent = "";
-    } else if (candidate.isDeleteFile) {
-      if (!existsSync(candidate.absPath)) {
-        void vscode.window.showWarningMessage(
-          "ErdForge: the file was already deleted since the preview was generated. Discard and retry the edit from the ERD.",
-        );
-        return;
-      }
-      try {
-        currentContent = readFileSync(candidate.absPath, "utf8");
-      } catch {
-        void vscode.window.showErrorMessage("ErdForge: source file no longer exists.");
-        return;
-      }
-    } else {
-      try {
-        currentContent = readFileSync(candidate.absPath, "utf8");
-      } catch {
-        void vscode.window.showErrorMessage("ErdForge: source file no longer exists.");
-        return;
-      }
-    }
+    const { candidate, title, recompute } = pending;
 
-    if (contentRevision(currentContent) !== candidate.originalRevision) {
-      void vscode.window.showWarningMessage(
-        "ErdForge: the file changed since the preview was generated. Discard and retry the edit from the ERD.",
-      );
+    const conflict = detectCandidateConflict(candidate);
+    if (hasConflict(conflict)) {
+      await this.clearActive();
+      await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+      await this.promptConflict(conflict, recompute);
       return;
     }
 
@@ -224,6 +212,29 @@ export class DiffPreviewController {
     if (!this.activeSessionId) return;
     await this.clearActive();
     await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+  }
+
+  /**
+   * Block a conflicting apply (never overwrite) and offer to recompute the
+   * preview against the latest on-disk content (P4-4 / ADR-0014).
+   */
+  private async promptConflict(
+    conflict: CandidateConflict,
+    recompute?: RecomputeEdit,
+  ): Promise<void> {
+    const message = `ErdForge: ${conflictMessage(conflict)}`;
+    if (!recompute) {
+      void vscode.window.showWarningMessage(message);
+      return;
+    }
+    const choice = await vscode.window.showWarningMessage(
+      message,
+      { modal: true },
+      RECOMPUTE_ACTION,
+    );
+    if (choice === RECOMPUTE_ACTION) {
+      await recompute();
+    }
   }
 
   private async clearActive(): Promise<void> {
